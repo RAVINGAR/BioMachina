@@ -1,0 +1,13 @@
+general:
+
+models:
+  # The item to use for custom models for this plugin. Choose an item that isn't used by another part of your resource-pack
+  custom_model_item: PAPER
+stats:
+  speed:
+    min: 0
+    max: 100
+  # How quickly a vehicle accelerates in speed increase per second
+  acceleration:
+    min: 0
+    max: 10

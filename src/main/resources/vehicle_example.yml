@@ -1,0 +1,19 @@
+# !!! IMPORTANT NOTES !!!
+# It is recommended to have all models centered as much as possible
+#
+#
+golf_cart: # Unique identifier
+  passenger_seats: 1
+  chassis:
+    # the path for the json file and texture file for this vehicle's chassis. this 'chassis' option is optional,
+    # removing it will mean that the identifier of the vehicle is used as the path
+    model: golf_cart
+  wheels:
+    # the path for the json file and texture file for this vehicle's wheel
+    model: golf_cart_wheel
+    # how many front wheels does this vehicle have. Front wheels will steer with the vehicle
+    front_amount: 2
+    # how many rear wheels does this vehicle have. Rear wheels will not steer
+    rear_amount: 2
+  stats:
+    base_speed: 0.3
