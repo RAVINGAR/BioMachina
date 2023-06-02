@@ -1,4 +1,4 @@
-package com.ravingarinc.biomachina.protocol
+package com.ravingarinc.biomachina.animation
 
 import com.comphenix.protocol.PacketType
 import com.comphenix.protocol.ProtocolLibrary
@@ -9,21 +9,18 @@ import com.comphenix.protocol.events.PacketEvent
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.api.module.SuspendingModuleListener
 import com.ravingarinc.api.module.warn
-import com.ravingarinc.biomachina.animation.AnimationController
-import com.ravingarinc.biomachina.animation.AnimationTicker
 import com.ravingarinc.biomachina.vehicle.Vehicle
 import com.ravingarinc.biomachina.vehicle.VehicleManager
 import com.ravingarinc.biomachina.viewer.Individual
-import com.ravingarinc.biomachina.viewer.Viewer
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
-import org.bukkit.event.world.ChunkLoadEvent
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(AnimationHandler::class.java, plugin) {
+
     private val protocol = ProtocolLibrary.getProtocolManager()
     private lateinit var manager : VehicleManager
     private val exemptIds: MutableMap<Int, AnimationController<*>> = ConcurrentHashMap()
@@ -49,6 +46,8 @@ class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(Animation
 
         // todo we need to prevent any unwanted packets form being sent to the client!
         // just like in actors!
+
+        // is there an issue with multiple exemptIds representing a single controller?
         protocol.addPacketListener(object : PacketAdapter(plugin, ListenerPriority.NORMAL, listOf(PacketType.Play.Server.ENTITY_DESTROY), ListenerOptions.ASYNC) {
             override fun onPacketSending(event: PacketEvent?) {
                 event!!.packet.intLists.readSafely(0)?.let {
@@ -56,6 +55,40 @@ class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(Animation
                 }
             }
         })
+
+        /*
+        protocol.addPacketListener(object : PacketAdapter(plugin, ListenerPriority.NORMAL, listOf(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK), ListenerOptions.ASYNC) {
+            override fun onPacketSending(event: PacketEvent?) {
+                val packet = event!!.packet
+                packet.integers.readSafely(0)?.let { id ->
+                    if(packet.getMeta<Boolean>(PACKET_VALID_META).isEmpty && exemptIds.containsKey(id) ) {
+                        event.isCancelled = true
+                        warn("Rel_Entity_move_look is cancelling!")
+                        create(PacketType.Play.Server.REL_ENTITY_MOVE) {
+                            it.integers.write(0, id)
+                            it.shorts.write(0, packet.shorts.read(0))
+                            it.shorts.write(1, packet.shorts.read(1))
+                            it.shorts.write(2, packet.shorts.read(2))
+                            it.booleans.write(0, packet.booleans.read(0))
+                        }.send(event.player)
+                    }
+                }
+            }
+        })*/
+
+        /*
+        protocol.addPacketListener(object : PacketAdapter(plugin, ListenerPriority.NORMAL, listOf(PacketType.Play.Server.ENTITY_LOOK), ListenerOptions.ASYNC) {
+            override fun onPacketSending(event: PacketEvent?) {
+                val packet = event!!.packet
+                packet.integers.readSafely(0)?.let {
+                    if(packet.getMeta<Boolean>(PACKET_VALID_META).isEmpty && exemptIds.containsKey(it) ) {
+                        warn("Move_Look is cancelling!")
+                        event.isCancelled = true
+                    }
+                }
+            }
+        })*/
+
         controllerTicker = AnimationTicker(plugin, 8, controllers.values)
         controllerTicker.start(5)
 

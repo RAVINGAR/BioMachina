@@ -3,23 +3,29 @@ package com.ravingarinc.biomachina.data
 import org.joml.AxisAngle4f
 import org.joml.Quaternionf
 import org.joml.Vector3f
-import java.util.Objects
+import java.util.*
 
 sealed class ModelTransformation {
-    abstract var origin: Vector3f
-    abstract var leftRotation: Quaternionf
-    abstract var rightRotation: Quaternionf
-    abstract var scale: Vector3f
+    abstract val origin: Vector3f
+
+    abstract var yaw: Float
+    abstract var pitch: Float
+    abstract var roll: Float
+
+    abstract val scale: Vector3f
 
     abstract fun copy() : ModelTransformation
 
+    fun override(vector: ModelTransformation) {
+        this.origin.set(vector.origin)
+        this.scale.set(vector.scale)
+        this.yaw = vector.yaw
+        this.pitch = vector.pitch
+        this.roll = vector.roll
+    }
+
     override fun hashCode(): Int {
-        var hash = 7
-        hash = 11 * hash + Objects.hashCode(this.origin)
-        hash = 11 * hash + Objects.hashCode(this.leftRotation)
-        hash = 11 * hash + Objects.hashCode(this.scale)
-        hash = 11 * hash + Objects.hashCode(this.rightRotation)
-        return hash;
+        return Objects.hash(origin, yaw, pitch, roll, scale)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -28,7 +34,7 @@ sealed class ModelTransformation {
         } else if(other == null) {
             return false
         } else if(other is ModelTransformation) {
-            return other.origin == this.origin && other.leftRotation == this.leftRotation && other.rightRotation == this.rightRotation && other.scale == this.scale
+            return other.origin == this.origin && other.yaw == this.yaw && other.pitch == this.pitch && other.roll == this.roll && other.scale == this.scale
         }
         return false
     }
@@ -51,10 +57,11 @@ fun emptyTransformation() : ModelTransformation {
 }
 
 class EmptyTransformation : ModelTransformation() {
-    override var origin: Vector3f = Vector3f(0F, 0F, 0F)
-    override var leftRotation: Quaternionf = Quaternionf()
-    override var rightRotation: Quaternionf = Quaternionf()
-    override var scale: Vector3f = Vector3f(1F, 1F, 1F)
+    override val origin: Vector3f = Vector3f(0F, 0F, 0F)
+    override val scale: Vector3f = Vector3f(1F, 1F, 1F)
+    override var yaw: Float = 0F
+    override var pitch: Float = 0F
+    override var roll: Float = 0F
 
     override fun copy(): ModelTransformation {
         return EmptyTransformation()

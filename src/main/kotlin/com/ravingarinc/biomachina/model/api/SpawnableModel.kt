@@ -3,21 +3,22 @@ package com.ravingarinc.biomachina.model.api
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.Entity
-import org.bukkit.entity.Player
 import java.util.*
-import java.util.function.Consumer
 import kotlin.properties.Delegates
 
 open class SpawnableModel<T : Entity>(private val entityType: Class<T>,
-                                      override var parent: Model?,
-                                      private val consumer: Consumer<T>
+                                      override val parent: Model?,
+                                      private val consumer: (T) -> Unit
 ) : EntityModel {
     override var entity: Entity?
         get() = innerEntity
         set(value) {
             innerEntity = value as? T
-            internalId = innerEntity!!.entityId
-            internalUUID = innerEntity!!.uniqueId
+            value?.let {
+                internalId = value.entityId
+                internalUUID = value.uniqueId
+            }
+
         }
     protected var innerEntity: T? = null
 
@@ -37,7 +38,7 @@ open class SpawnableModel<T : Entity>(private val entityType: Class<T>,
 
     override fun spawn(x: Double, y: Double, z: Double, world: World) : Entity? {
         return world.spawn(Location(world, x, y, z), entityType) {
-            consumer.accept(it)
+            consumer.invoke(it)
         }
     }
 
@@ -47,10 +48,6 @@ open class SpawnableModel<T : Entity>(private val entityType: Class<T>,
             it.remove()
         }
         entity = null
-    }
-
-    override fun update() {
-
     }
 
     override fun forEach(consumer: (Model) -> Unit) {

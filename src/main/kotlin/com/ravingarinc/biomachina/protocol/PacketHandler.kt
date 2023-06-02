@@ -10,10 +10,12 @@ import java.lang.reflect.InvocationTargetException
 
 interface PacketHandler {
     companion object {
+        val PACKET_VALID_META: String = "biomachina_packet_valid"
         val PROTOCOL_MANAGER: ProtocolManager = ProtocolLibrary.getProtocolManager()
 
         fun create(type: PacketType, modifier: (PacketContainer) -> Unit) : PacketContainer {
             val packet = PROTOCOL_MANAGER.createPacket(type, true)
+            packet.setMeta(PACKET_VALID_META, true)
             modifier.invoke(packet)
             return packet
         }
@@ -26,8 +28,4 @@ interface PacketHandler {
             }
         }
     }
-
-
-
-
 }

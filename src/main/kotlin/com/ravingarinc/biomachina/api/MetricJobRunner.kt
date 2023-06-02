@@ -1,4 +1,4 @@
-package com.ravingarinc.yplants.api
+package com.ravingarinc.biomachina.api
 
 import com.ravingarinc.api.module.RavinPlugin
 import java.util.concurrent.ConcurrentLinkedQueue

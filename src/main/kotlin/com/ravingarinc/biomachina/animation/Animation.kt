@@ -1,8 +1,6 @@
 package com.ravingarinc.biomachina.animation
 
 import com.ravingarinc.biomachina.model.api.EntityModel
-import com.ravingarinc.biomachina.model.api.Model
-import kotlinx.coroutines.CoroutineScope
 
 abstract class Animation<T : EntityModel>(val id: String) {
     /**
@@ -27,18 +25,13 @@ abstract class RepeatingAnimation<T : EntityModel>(id: String, private val perio
 
 }
 
-abstract class PersistentAnimation<T : EntityModel>(id: String, private val period: Long) : Animation<T>(id) {
+abstract class PersistentAnimation<T : EntityModel>(id: String) : Animation<T>(id) {
     private var isCancelled = false
-    private var iterations = 1L;
     override fun animate(controller: AnimationController<T>): Boolean {
         if(isCancelled) {
             return true
         }
-        //period of 3, so it goes 1, 2, 3
-        if(iterations++ % period == 0L) {
-            iterations = 1L
-            tick(controller)
-        }
+        tick(controller)
         return false
     }
 

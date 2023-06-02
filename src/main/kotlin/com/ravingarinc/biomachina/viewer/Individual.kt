@@ -1,12 +1,9 @@
 package com.ravingarinc.biomachina.viewer
 
 import com.comphenix.protocol.events.PacketContainer
-import com.ravingarinc.biomachina.protocol.PacketHandler
 import com.ravingarinc.biomachina.protocol.PacketHandler.Companion.send
 import org.bukkit.entity.Player
 import java.util.*
-import java.util.function.Consumer
-import java.util.function.Function
 
 class Individual(private val player: Player) : Viewer {
     override val uniqueId: UUID = player.uniqueId
@@ -20,7 +17,7 @@ class Individual(private val player: Player) : Viewer {
     }
 
     override fun destroy() {
-        parents.forEach { parent ->
+        ArrayList(parents).forEach { parent ->
             if(parent is MutableViewGroup) {
                 parent.removeViewer(this)
             }

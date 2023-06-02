@@ -1,8 +1,23 @@
 # !!! IMPORTANT NOTES !!!
-# It is recommended to have all models centered as much as possible
+# Custom models must follow the following rules! Otherwise the various animations applied to them will be extremely whack!
+# For all given models, the overall pivot point must be positioned in the centre of the model. The pivot must also be
+# placed at 8,8,8.
+# To do this, select the root bone, click centre pivot (in most cases it
+# will centre the pivot). Then with the root still selected MOVE the model (not the pivot) such that the pivot's location
+# is as close to 8,8,8 as possible.
 #
+# If you wish for models to be orientated correctly, please ensure the front of the vehicle faces NORTH in block bench.
 #
+# Vehicle Types
+#
+# Motor Vehicle - 'motor_vehicle'
+#   A motor vehicle is any such car, truck, bus or other vehicle that travels on land, and has wheels.
+#
+# Aircraft - 'aircraft'
+#   An aircraft is any flying vehicle. It may start on the ground, but must reach a specific speed before it can take
+#   off.
 golf_cart: # Unique identifier
+  type: motor_vehicle
   passenger_seats: 1
   chassis:
     # the path for the json file and texture file for this vehicle's chassis. this 'chassis' option is optional,

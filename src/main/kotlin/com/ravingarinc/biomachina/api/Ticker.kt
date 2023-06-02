@@ -12,9 +12,8 @@ import java.util.logging.Level
 import kotlin.math.roundToLong
 import kotlin.system.measureTimeMillis
 
-abstract class Ticker(protected val plugin: RavinPlugin, interval: Int) {
+abstract class Ticker(protected val plugin: RavinPlugin, private val millis: Long) {
     protected val scope = CoroutineScope(plugin.minecraftDispatcher)
-    private val millis: Long = interval.ticks
     private val metrics: Queue<Long> = ConcurrentLinkedQueue()
     private var max: Long = 0
     fun start(delay: Int = 0) {
@@ -30,6 +29,7 @@ abstract class Ticker(protected val plugin: RavinPlugin, interval: Int) {
                 val time = measureTimeMillis {
                     tick()
                 }
+                /*
                 if (time > 0L) {
                     if (time > max) {
                         max = time
@@ -38,16 +38,17 @@ abstract class Ticker(protected val plugin: RavinPlugin, interval: Int) {
                     if (metrics.size > 16) {
                         metrics.poll()
                     }
-                }
-                var next = millis - time
+                }*/
+                val next = millis - time
                 if (next < 0) {
                     warn(
                         "Ticker is running ${formatMilliseconds(next * -1)} behind! Please consider " +
                                 "increasing the tick interval!"
                     )
-                    next = 20.ticks
+                } else {
+                    delay(next)
                 }
-                delay(next)
+
             }
         }
     }

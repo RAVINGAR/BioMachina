@@ -7,7 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import java.util.*
 
-class AnimationTicker(plugin: RavinPlugin, threads: Int, private val controllers: MutableCollection<AnimationController<*>>) : Ticker(plugin, 1) {
+class AnimationTicker(plugin: RavinPlugin, threads: Int, private val controllers: MutableCollection<AnimationController<*>>) : Ticker(plugin, 50) {
     private val semaphore: Semaphore = Semaphore(threads)
     override suspend fun CoroutineScope.tick() {
         LinkedList(controllers).forEach {

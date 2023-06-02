@@ -1,14 +1,10 @@
-package com.ravingarinc.biomachina.vehicle
+package com.ravingarinc.biomachina.vehicle.motorvehicle
 
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.events.PacketContainer
-import com.ravingarinc.biomachina.animation.Animation
 import com.ravingarinc.biomachina.animation.AnimationController
-import com.ravingarinc.biomachina.animation.PersistentAnimation
-import com.ravingarinc.biomachina.data.VehicleType
-import com.ravingarinc.biomachina.model.VehicleModel
-import com.ravingarinc.biomachina.model.VehicleModel.Animations.buildIdleRotationAnimation
-import com.ravingarinc.biomachina.protocol.AnimationHandler
+import com.ravingarinc.biomachina.animation.AnimationHandler
+import com.ravingarinc.biomachina.vehicle.Vehicle
+import com.ravingarinc.biomachina.vehicle.VehicleManager
+import com.ravingarinc.biomachina.vehicle.motorvehicle.MotorVehicleModel.Animations.buildIdleRotationAnimation
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.World
@@ -19,7 +15,6 @@ import org.bukkit.inventory.EquipmentSlot
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.collections.HashMap
 
 /**
  * Vehicle represents a Model linked to a driveable entity.
@@ -40,15 +35,13 @@ import kotlin.collections.HashMap
  * The alternative is BOATS!
  * Maybe it would be worth having blocks placed underneath a boat
  */
-class MotorVehicle(override val uuid: UUID, val type: VehicleType,
-                   creator: (AnimationHandler, MotorVehicle) -> AnimationController<*>
-) : Vehicle {
-    private val model = VehicleModel(type)
+class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType) : Vehicle {
+    private val model = MotorVehicleModel(type)
     private val engineRunning = AtomicBoolean(false)
     private var driver: Player? = null
     private val passengers: MutableSet<LivingEntity> = HashSet()
 
-    private val currentYaw = AtomicReference(0F)
+    private val currentYaw = AtomicReference(0F) // This should always be initially 0,
 
     private var lastSync: Long = 0L
 
@@ -66,8 +59,14 @@ class MotorVehicle(override val uuid: UUID, val type: VehicleType,
         model.destroy()
     }
 
+    override fun update() {
+        model.reapply()
+    }
+
     override fun buildAnimationController(handler: AnimationHandler): AnimationController<*> {
-        val controller = AnimationController(handler, model)
+        val controller = AnimationController(handler, model) {
+            this.sendPacket(it.getAllTransformationPackets(this))
+        }
         with(model) {
             controller.animate(this.buildIdleRotationAnimation(currentYaw))
             // todo more animations!
@@ -92,11 +91,7 @@ class MotorVehicle(override val uuid: UUID, val type: VehicleType,
     }
 
     override fun sync() {
-        val time = System.currentTimeMillis()
-        if(time > lastSync + 50L) {
-            lastSync = time
-            currentYaw.set(model.entity!!.location.yaw)
-        }
+        currentYaw.set(model.entity!!.location.yaw)
     }
 
     override fun isRunning() : Boolean {
@@ -124,7 +119,7 @@ class MotorVehicle(override val uuid: UUID, val type: VehicleType,
     }
 
     override fun boundingBox() : Interaction? {
-        return model.interaction.castEntity
+        return model.interaction.entity as? Interaction
     }
 
     /**
@@ -181,29 +176,5 @@ class MotorVehicle(override val uuid: UUID, val type: VehicleType,
             it.eject()
         }
         passengers.clear()
-    }
-
-    object Factory {
-        // see https://blog.logrocket.com/understanding-kotlin-design-patterns/#factory-abstract-factory-provider-model-kotlin-method
-        private val vehicleTypes: MutableMap<String, VehicleType> = HashMap()
-
-        fun getType(typeName: String) : VehicleType? {
-            return vehicleTypes[typeName.lowercase()];
-        }
-        fun clear() {
-            vehicleTypes.clear()
-        }
-
-        fun hasType(typeName: String) : Boolean {
-            return vehicleTypes.containsKey(typeName)
-        }
-
-        fun getTypes() : Set<String> {
-            return vehicleTypes.keys
-        }
-
-        fun add(type: VehicleType) {
-            vehicleTypes[type.identifier] = type
-        }
     }
 }

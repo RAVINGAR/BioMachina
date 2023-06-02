@@ -4,66 +4,51 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="17ab3fe5-cea5-45be-b1ba-43833023d8be" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/ravingarinc/biomachina/api/Argument.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/ravingarinc/biomachina/api/Registry.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/ravingarinc/biomachina/api/TriFunction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/BioMachina.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/Animation.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationController.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationTicker.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Extensions.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/JobRunner.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/MetricJobRunner.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/SingletonHolder.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Ticker.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/command/BioMachinaCommand.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelData.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelTransformation.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelVector.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/VehicleType.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/VehicleModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/ContainerModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/DisplayModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/EntityModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/Model.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/RootModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/SpawnableModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/VectorModel.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/ConfigFile.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/PersistenceHandler.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/Properties.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/SQLDatabase.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/VehicleDatabase.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/json/Serializers.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/protocol/AnimationHandler.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/protocol/PacketHandler.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/MotorVehicle.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/Vehicle.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/VehicleListener.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/VehicleManager.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/stat/FloatStat.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/stat/IntStat.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/stat/Stat.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/stat/Stats.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/Group.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/Individual.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/MutableViewGroup.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/ViewGroup.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/Viewer.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/config.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/data.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/vehicle_example.yml" afterDir="false" />
+    <list default="true" id="17ab3fe5-cea5-45be-b1ba-43833023d8be" name="Changes" comment="More work and such">
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Version.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/chat/ChatUtilities.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/editor/EditorSession.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/editor/ModelEditor.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/VehiclePart.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/VehicleType.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/motorvehicle/MotorVehicleType.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/BioMachina.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/BioMachina.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/Animation.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/Animation.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationController.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationController.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationTicker.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationTicker.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Extensions.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Extensions.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/MetricJobRunner.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/MetricJobRunner.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Ticker.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/api/Ticker.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/command/BioMachinaCommand.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/command/BioMachinaCommand.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelData.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelData.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelTransformation.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelTransformation.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelVector.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/ModelVector.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/data/VehicleType.kt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/VehicleModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/motorvehicle/MotorVehicleModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/ContainerModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/ContainerModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/DisplayModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/DisplayModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/EntityModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/EntityModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/Model.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/Model.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/RootModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/RootModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/SpawnableModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/SpawnableModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/VectorModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/model/api/VectorModel.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/json/Serializers.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/persistent/json/Serializers.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/protocol/AnimationHandler.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/animation/AnimationHandler.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/protocol/PacketHandler.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/protocol/PacketHandler.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/MotorVehicle.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/motorvehicle/MotorVehicle.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/Vehicle.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/Vehicle.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/VehicleManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/vehicle/VehicleManager.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/Individual.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/com/ravingarinc/biomachina/viewer/Individual.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/vehicle_example.yml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/vehicle_example.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeInsightWorkspaceSettings">
+    <option name="optimizeImportsOnTheFly" value="true" />
   </component>
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
@@ -73,9 +58,17 @@
   <component name="ExternalProjectsManager">
     <system id="GRADLE">
       <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="BioMachina" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
@@ -88,14 +81,17 @@
         <option value="Kotlin Data Class" />
         <option value="Interface" />
         <option value="Kotlin Object" />
-        <option value="Kotlin Interface" />
         <option value="Class" />
         <option value="Kotlin Class" />
+        <option value="Kotlin Interface" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="KotlinCodeInsightWorkspaceSettings">
+    <option name="optimizeImportsOnTheFly" value="true" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -121,7 +117,7 @@
     &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.import&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -132,6 +128,9 @@
       <recent name="$PROJECT_DIR$/src/main/java/com/ravingarinc/biomachina/api" />
     </key>
     <key name="MoveKotlinTopLevelDeclarationsDialog.RECENTS_KEY">
+      <recent name="com.ravingarinc.biomachina.vehicle.motorvehicle" />
+      <recent name="com.ravingarinc.biomachina.vehicle" />
+      <recent name="com.ravingarinc.biomachina.animation" />
       <recent name="com.ravingarinc.biomachina.model.api" />
     </key>
     <key name="CopyKotlinDeclarationDialog.RECENTS_KEY">
@@ -140,7 +139,7 @@
     </key>
   </component>
   <component name="RunManager">
-    <configuration name="BioMachina [clean build]" type="GradleRunConfiguration" factoryName="Gradle" nameIsGenerated="true">
+    <configuration name="BioMachina [build]" type="GradleRunConfiguration" factoryName="Gradle" nameIsGenerated="true">
       <ExternalSystemSettings>
         <option name="executionName" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -151,7 +150,6 @@
         </option>
         <option name="taskNames">
           <list>
-            <option value="clean" />
             <option value="build" />
           </list>
         </option>
@@ -201,11 +199,48 @@
       <workItem from="1684221695140" duration="14571000" />
       <workItem from="1684288329585" duration="3470000" />
       <workItem from="1684291811640" duration="22249000" />
+      <workItem from="1684316227539" duration="8915000" />
+      <workItem from="1684380883863" duration="6781000" />
+      <workItem from="1684399268475" duration="5104000" />
+      <workItem from="1684727142331" duration="606000" />
+      <workItem from="1685166329632" duration="19047000" />
+      <workItem from="1685248312354" duration="1396000" />
+      <workItem from="1685343245890" duration="15000" />
+      <workItem from="1685431644431" duration="8596000" />
+      <workItem from="1685506422842" duration="7230000" />
+      <workItem from="1685523189214" duration="8243000" />
+      <workItem from="1685534009982" duration="1267000" />
+      <workItem from="1685589528413" duration="15977000" />
+      <workItem from="1685615630031" duration="37000" />
+      <workItem from="1685684192335" duration="7497000" />
     </task>
+    <task id="LOCAL-00001" summary="More work and such">
+      <created>1684317613839</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1684317613839</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="More work and such" />
+    <option name="LAST_COMMIT_MESSAGE" value="More work and such" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

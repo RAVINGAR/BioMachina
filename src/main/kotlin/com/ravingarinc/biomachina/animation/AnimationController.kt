@@ -2,53 +2,45 @@ package com.ravingarinc.biomachina.animation
 
 import com.comphenix.protocol.PacketType
 import com.comphenix.protocol.events.PacketContainer
-import com.ravingarinc.api.module.RavinPlugin
-import com.ravingarinc.api.module.log
+import com.ravingarinc.biomachina.api.Version
+import com.ravingarinc.biomachina.api.Versions
 import com.ravingarinc.biomachina.model.api.EntityModel
-import com.ravingarinc.biomachina.protocol.AnimationHandler
 import com.ravingarinc.biomachina.protocol.PacketHandler
 import com.ravingarinc.biomachina.viewer.Group
 import com.ravingarinc.biomachina.viewer.Viewer
-import kotlinx.coroutines.CoroutineScope
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.logging.Level
 
-class AnimationController<T : EntityModel>(handler: AnimationHandler, private val model: T) {
+class AnimationController<T : EntityModel>(handler: AnimationHandler, val model: T, private val applier: AnimationController<T>.(T) -> Unit) {
     private val isDisposed = AtomicBoolean(false)
     private val viewers: Group = Group(model.getEntityUUID())
-    private val internalIds: Set<Int> = buildSet {
-        model.forEach {
-            if(it is EntityModel) {
-                val id = it.getEntityId()
-                this.add(id)
-                handler.addExemption(id, this@AnimationController)
-            }
-        }
-    }
+    private val entityId: Int = model.getEntityId()
     private val animations: MutableList<Animation<T>> = ArrayList()
+
+    val version: Version = Versions.serverVersion
+    init {
+        handler.addExemption(entityId, this)
+    }
 
     fun animate(animation: Animation<T>) {
         animations.add(animation)
     }
 
     fun tick() {
+        if(viewers.size() == 0) return
+
         for(i in animations.indices.reversed()) {
             if(animations[i].animate(this)) {
                 animations.removeAt(i)
             }
         }
-
+        applier.invoke(this, model)
     }
 
     fun addViewer(viewer: Viewer) {
-        log(Level.INFO, "Adding viewer ${viewer.uniqueId}")
         this.viewers.addViewer(viewer)
     }
 
     fun removeViewer(viewer: Viewer) {
-        log(Level.INFO, "Removing viewer ${viewer.uniqueId}")
         this.viewers.removeViewer(viewer)
     }
 
@@ -56,19 +48,17 @@ class AnimationController<T : EntityModel>(handler: AnimationHandler, private va
         return PacketHandler.create(type, modifier)
     }
 
-    fun sendPacket(packets: List<PacketContainer>) {
-        viewers.sendPacket(*packets.toTypedArray())
+    fun sendPacket(packets: Array<PacketContainer>) {
+        viewers.sendPacket(*packets)
     }
 
     fun dispose(handler: AnimationHandler) {
-        isDisposed.setRelease(true)
-        internalIds.forEach {
-            handler.removeExemption(it)
-        }
+        isDisposed.set(true)
+        handler.removeExemption(entityId)
         viewers.destroy()
     }
 
     fun isDisposed() : Boolean {
-        return isDisposed.acquire
+        return isDisposed.get()
     }
 }

@@ -2,38 +2,29 @@
 
 package com.ravingarinc.biomachina.data
 
-import com.ravingarinc.biomachina.persistent.json.AxisAngle4fSerializer
 import com.ravingarinc.biomachina.persistent.json.QuaternionfSerializer
 import com.ravingarinc.biomachina.persistent.json.Vector3fSerializer
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import org.joml.AxisAngle4f
-import org.joml.Quaternionf
 import org.joml.Vector3f
+import java.util.*
 
 @Serializable
-class ModelData(val customModelData: Int,
-                override var origin: Vector3f = Vector3f(),
-                @SerialName("lRot") override var leftRotation: Quaternionf = Quaternionf(),
-                @SerialName("rRot") override var rightRotation: Quaternionf = Quaternionf(),
-                override var scale: Vector3f = Vector3f(1F, 1F, 1F)) : ModelTransformation() {
+class ModelData(var data: Int,
+                override val origin: Vector3f = Vector3f(),
+                override var yaw: Float = 0F,
+                override var pitch: Float = 0F,
+                override var roll: Float = 0F,
+                override val scale: Vector3f = Vector3f(1F, 1F, 1F)) : ModelTransformation() {
     override fun copy() : ModelData {
-        return ModelData(customModelData, Vector3f(origin), Quaternionf(leftRotation), Quaternionf(rightRotation), Vector3f(scale))
+        return ModelData(data, Vector3f(origin), yaw, pitch, roll, Vector3f(scale))
     }
 
     override fun equals(other: Any?): Boolean {
-        return super.equals(other) && (other is ModelData && other.customModelData == this.customModelData)
+        return super.equals(other) && (other is ModelData && other.data == this.data)
     }
 
     override fun hashCode(): Int {
-        var result = customModelData
-        result = 31 * result + origin.hashCode()
-        result = 31 * result + leftRotation.hashCode()
-        result = 31 * result + rightRotation.hashCode()
-        result = 31 * result + scale.hashCode()
-        return result
+        return Objects.hash(data, origin, yaw, pitch, roll, scale)
     }
-
-
 }

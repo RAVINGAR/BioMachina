@@ -122,3 +122,7 @@ fun parseMaterial(string: String): Material? {
     return material
 }
 
+fun Float.toRadians() : Float {
+    return (this * Math.PI / 180F).toFloat()
+}
+

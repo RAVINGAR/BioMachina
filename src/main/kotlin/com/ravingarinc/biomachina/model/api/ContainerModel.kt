@@ -2,8 +2,9 @@ package com.ravingarinc.biomachina.model.api
 
 import org.bukkit.World
 
-open class ContainerModel(override var parent: Model? = null) : Model {
-    private val children: MutableList<Model> = ArrayList()
+open class ContainerModel : Model {
+    override var parent: Model? = null
+    protected val children: MutableList<Model> = ArrayList()
     fun add(model: Model) {
         children.add(model)
     }
@@ -11,6 +12,8 @@ open class ContainerModel(override var parent: Model? = null) : Model {
     fun remove(model: Model) {
         children.remove(model)
     }
+
+    val size: Int get() = children.size
 
     override fun create(x: Double, y: Double, z: Double, world: World) {
         forEach {
@@ -20,10 +23,6 @@ open class ContainerModel(override var parent: Model? = null) : Model {
 
     override fun destroy() {
         forEach { it.destroy() }
-    }
-
-    override fun update() {
-        forEach { it.update() }
     }
 
     override fun forEach(consumer: (Model) -> Unit) {

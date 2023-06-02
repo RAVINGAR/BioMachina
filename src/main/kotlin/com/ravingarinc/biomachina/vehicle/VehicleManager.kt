@@ -3,19 +3,18 @@ package com.ravingarinc.biomachina.vehicle
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.api.module.SuspendingModule
 import com.ravingarinc.api.module.warn
+import com.ravingarinc.biomachina.animation.AnimationHandler
 import com.ravingarinc.biomachina.api.withModule
-import com.ravingarinc.biomachina.data.VehicleType
 import com.ravingarinc.biomachina.persistent.PersistenceHandler
-import com.ravingarinc.biomachina.protocol.AnimationHandler
 import org.bukkit.Location
-import org.bukkit.configuration.ConfigurationSection
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
-import org.bukkit.scheduler.BukkitTask
+import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::class.java, plugin) {
+    private val usedModelData: MutableSet<Int> = HashSet()
     private var nextModelData: Int = 1 //todo save this model data to a file so that adding new vehicles doesn't mess with it
     private val cachedVehicles: MutableMap<UUID, Vehicle> = ConcurrentHashMap()
 
@@ -23,39 +22,31 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     private val vehiclesById: MutableMap<Int, UUID> = ConcurrentHashMap()
     private val mountedPlayers: MutableMap<Player, UUID> = ConcurrentHashMap()
 
-    private lateinit var animationHandler: AnimationHandler
+    val jsonFolder = File(plugin.dataFolder, "json")
 
-    private lateinit var runner: BukkitTask
+    // TODO Find out a better to avoid having all these HASHMAPS. But also still have
+
+    private lateinit var animationHandler: AnimationHandler
     override suspend fun suspendLoad() {
         animationHandler = plugin.getModule(AnimationHandler::class.java)
         plugin.withModule(PersistenceHandler::class.java) { this.getVehicleConfigs().forEach { section ->
             val id = section.name.lowercase()
-            if(MotorVehicle.Factory.hasType(id)) {
+            if(Vehicle.Factory.hasType(id)) {
                 warn("Could not load one vehicle type configuration called '$id' as that identifier is already being used!")
             } else {
-                loadVehicleType(id, section)?.let { MotorVehicle.Factory.add(it) }
+                val type = section.getString("type")
+                if(type == null) {
+                    warn("Could not find 'type' option for vehicle type configuration called '$id'!")
+                } else {
+                    Vehicle.Factory.getFactory(type).load(this@VehicleManager, section)?.let {
+                        Vehicle.Factory.add(it)
+                        it.allParts().values.forEach { list ->
+                            list.forEach { part -> usedModelData.add(part.model.data) }
+                        }
+                    }
+                }
             }
         } }
-    }
-
-    private fun loadVehicleType(id: String, section: ConfigurationSection) : VehicleType? {
-        val seats = section.getInt("passenger_seats", 0)
-        val chassisModel : String? = section.getString("chassis.model")?.replace(".json", "");
-        if(chassisModel == null) {
-            warn("Could not find chassis.model for vehicle type '$id'")
-            return null
-        }
-        val wheelModel = section.getString("wheels.model")?.replace(".json", "");
-        if(wheelModel == null) {
-            warn("Could not find wheels.model for vehicle type '$id'")
-            return null
-        }
-        val frontAmount = section.getInt("wheels.front_amount", 0)
-        val rearAmount = section.getInt("wheels.rear_amount", 0)
-
-        //todo read stats and stuff
-        val cmd = getNextModelData()
-        return VehicleType(id, seats, chassisModel, wheelModel, "${cmd}0".toInt(), "${cmd}1".toInt(), frontAmount, rearAmount)
     }
 
     fun registerMount(player: Player, vehicle: Vehicle) {
@@ -86,10 +77,21 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     }
 
     fun getNextModelData() : Int {
-        return nextModelData++
+        var cmd = nextModelData++
+        while(usedModelData.contains("${cmd}0".toInt())) {
+            cmd = nextModelData++
+        }
+        return cmd
     }
 
-    fun createVehicle(type: VehicleType, spawnLocation: Location) {
+    /**
+     * Return a copy of the currently cached vehicles
+     */
+    fun getVehicles() : Collection<Vehicle> {
+        return ArrayList(cachedVehicles.values)
+    }
+
+    fun createVehicle(type: VehicleType, spawnLocation: Location) : Vehicle {
         val vehicle = type.build()
         vehicle.create(spawnLocation)
         cachedVehicles[vehicle.uuid] = vehicle
@@ -100,6 +102,7 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
         animationHandler.registerVehicle(vehicle)
 
         //todo save in database here
+        return vehicle
     }
 
     fun removeVehicle(vehicle: Vehicle) {
@@ -116,13 +119,13 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     }
 
     override suspend fun suspendCancel() {
-        //runner.cancel()
         cachedVehicles.forEach {
             it.value.destroy()
         }
         cachedVehicles.clear()
         cachedInteractions.clear()
-        MotorVehicle.Factory.clear()
+        Vehicle.Factory.clear()
+        nextModelData = 0
         // todo save custom model datas
     }
 
