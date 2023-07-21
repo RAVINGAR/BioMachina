@@ -9,6 +9,7 @@ import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
 import org.bukkit.inventory.EquipmentSlot
 import java.util.*
+import java.util.concurrent.atomic.AtomicReference
 
 interface Vehicle {
     val uuid: UUID
@@ -16,7 +17,29 @@ interface Vehicle {
     val type: VehicleType
     val world: World
 
+    var isMountable: Boolean
 
+    val isDestroyed: Boolean
+
+    /**
+     * The current yaw of the base entity vehicle
+     */
+    val yaw: AtomicReference<Float>
+
+    /**
+     * The current pitch of the base entity vehicle
+     */
+    val pitch: AtomicReference<Float>
+
+    /**
+     * The current roll of the base entity vehicle
+     */
+    val roll: AtomicReference<Float>
+
+    /**
+     * Where speed is meter travelled per tick. This value represents the current speed of the boat.
+     */
+    val speed: AtomicReference<Float>
 
     fun buildAnimationController(handler: AnimationHandler) : AnimationController<*>
 
@@ -26,7 +49,10 @@ interface Vehicle {
     fun stop(player: Player)
     fun tick()
 
-    fun update()
+    /**
+     * Apply any changes from editor
+     */
+    fun apply()
 
     fun sync()
     fun isRunning() : Boolean
@@ -57,7 +83,7 @@ interface Vehicle {
         }
 
         fun getType(typeName: String) : VehicleType? {
-            return vehicleTypes[typeName.lowercase()];
+            return vehicleTypes[typeName.lowercase()]
         }
         fun clear() {
             vehicleTypes.clear()

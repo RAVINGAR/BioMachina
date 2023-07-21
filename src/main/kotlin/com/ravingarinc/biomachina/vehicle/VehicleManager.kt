@@ -1,11 +1,18 @@
 package com.ravingarinc.biomachina.vehicle
 
+import com.github.shynixn.mccoroutine.bukkit.minecraftDispatcher
+import com.github.shynixn.mccoroutine.bukkit.ticks
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.api.module.SuspendingModule
 import com.ravingarinc.api.module.warn
 import com.ravingarinc.biomachina.animation.AnimationHandler
+import com.ravingarinc.biomachina.api.Ticker
 import com.ravingarinc.biomachina.api.withModule
+import com.ravingarinc.biomachina.data.editor.EditorSession
 import com.ravingarinc.biomachina.persistent.PersistenceHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
 import org.bukkit.Location
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
@@ -21,6 +28,10 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     private val cachedInteractions: MutableMap<Interaction, UUID> = ConcurrentHashMap()
     private val vehiclesById: MutableMap<Int, UUID> = ConcurrentHashMap()
     private val mountedPlayers: MutableMap<Player, UUID> = ConcurrentHashMap()
+
+    private val editorSessions: MutableMap<UUID, EditorSession> = Hashtable()
+
+    private lateinit var ticker: VehicleTicker
 
     val jsonFolder = File(plugin.dataFolder, "json")
 
@@ -41,12 +52,14 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
                     Vehicle.Factory.getFactory(type).load(this@VehicleManager, section)?.let {
                         Vehicle.Factory.add(it)
                         it.allParts().values.forEach { list ->
-                            list.forEach { part -> usedModelData.add(part.model.data) }
+                            list.forEach { part -> if(part is ModelPart) usedModelData.add(part.model.data) }
                         }
                     }
                 }
             }
         } }
+        ticker = VehicleTicker(plugin, cachedVehicles.values)
+        ticker.start(5)
     }
 
     fun registerMount(player: Player, vehicle: Vehicle) {
@@ -84,6 +97,25 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
         return cmd
     }
 
+    fun hasEditorSession(player: Player) : Boolean {
+        return editorSessions.containsKey(player.uniqueId)
+    }
+
+    fun openEditorSession(player: Player, type: VehicleType) {
+        val session = EditorSession(plugin, type, player)
+        editorSessions[player.uniqueId] = session
+        session.open()
+    }
+
+    fun removeEditorSession(player: Player) {
+        editorSessions.remove(player.uniqueId)
+    }
+
+    fun discardEditorSession(player: Player) {
+        val session = editorSessions[player.uniqueId]
+        session?.discard()
+    }
+
     /**
      * Return a copy of the currently cached vehicles
      */
@@ -119,6 +151,11 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     }
 
     override suspend fun suspendCancel() {
+        editorSessions.forEach { (_, session) ->
+            session.discard()
+        }
+        editorSessions.clear()
+        ticker.cancel()
         cachedVehicles.forEach {
             it.value.destroy()
         }
@@ -130,4 +167,22 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     }
 
 
+    class VehicleTicker(plugin: RavinPlugin, private val vehicles: Collection<Vehicle>) : Ticker(plugin, 5.ticks, context = plugin.minecraftDispatcher) {
+        private val semaphore: Semaphore = Semaphore(4)
+        override suspend fun CoroutineScope.tick() {
+            ArrayList(vehicles).forEach {
+                semaphore.acquire()
+                scope.launch {
+                    try {
+                        if(!it.isDestroyed) {
+                            it.tick()
+                        }
+                    }
+                    finally {
+                        semaphore.release()
+                    }
+                }
+            }
+        }
+    }
 }

@@ -1,20 +1,23 @@
 package com.ravingarinc.biomachina.data.editor
 
+import com.ravingarinc.api.Version
+import com.ravingarinc.api.Versions
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.biomachina.api.chat.callback
+import com.ravingarinc.biomachina.api.round
 import com.ravingarinc.biomachina.data.ModelTransformation
 import com.ravingarinc.biomachina.data.copy
-import com.ravingarinc.biomachina.vehicle.Vehicle
-import com.ravingarinc.biomachina.vehicle.VehicleManager
-import com.ravingarinc.biomachina.vehicle.VehiclePart
-import com.ravingarinc.biomachina.vehicle.VehicleType
+import com.ravingarinc.biomachina.model.BlockDisplayModel
+import com.ravingarinc.biomachina.vehicle.*
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.ComponentLike
 import net.kyori.adventure.text.TextComponent
 import net.kyori.adventure.text.format.NamedTextColor
+import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.joml.Vector3f
 import java.util.*
+import kotlin.math.max
 
 class EditorSession(private val plugin: RavinPlugin, private val type: VehicleType, private val player: Player) {
     private val manager = plugin.getModule(VehicleManager::class.java)
@@ -24,13 +27,19 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
     private var degrees: Float = 15F
     private var isDisposed = false
 
+    private val collisionBox = BlockDisplayModel(type.parts(Part.Type.COLLISION).first().model, Material.GLASS, null)
+    private var isHidden = false
 
-    private val componentProviders: Map<VehiclePart.Type, Component> = buildMap {
+    private val componentProviders: Map<Part.Type<*>, Component> = buildMap {
         type.allParts().forEach {
             val builder = Component.text()
             for(i in it.value.indices) {
-                builder.append(getPartMessage("${it.key.display} #${i+1}", it.value[i]))
-                builder.append(Component.text("\n"))
+                val part = it.value[i]
+                if(part is ModelPart) {
+                    builder.append(getPartMessage("${it.key.display} #${i+1}", part))
+                    builder.append(Component.text("\n"))
+                }
+
             }
             this[it.key] = builder.build()
         }
@@ -40,14 +49,34 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
         val loc = player.eyeLocation
         loc.add(loc.direction.normalize().multiply(3))
         vehicle = manager.createVehicle(type, loc)
+        vehicle.isMountable = false
+        collisionBox.create(loc.x, loc.y, loc.z, loc.world)
+        collisionBox.entity?.let { it.isGlowing = true }
+    }
+
+    fun showCollision() {
+        if(isHidden) collisionBox.show(Versions.version)?.let {
+            Version.protocol.sendServerPacket(player, it)
+            collisionBox.apply(vehicle.yaw.get() * -1F)
+            isHidden = false
+            vehicle.isMountable = false
+        }
+    }
+
+    fun hideCollision() {
+        if(!isHidden) collisionBox.hide(Versions.version)?.let {
+            Version.protocol.sendServerPacket(player, it)
+            isHidden = true
+            vehicle.isMountable = true
+        }
     }
 
     fun open() {
         player.sendRichMessage("<yellow>Editor session has been opened!\n")
-        send(VehiclePart.Type.CHASSIS)
+        send(Part.Type.CHASSIS)
     }
 
-    private fun send(part: VehiclePart.Type) {
+    private fun send(part: Part.Type<*>) {
         player.sendRichMessage("<gray>-------- <bold><dark_purple>Vehicle Model Editor</dark_purple></bold> --------")
         player.sendRichMessage("<gray>Vehicle Type - '<light_purple>${type.identifier}'")
         player.sendRichMessage("<gray>Please note your changes will not be applied unless saved!\n")
@@ -121,6 +150,7 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
                 .color(NamedTextColor.GREEN)
                 .callback("Save all changes and apply to all models") {
                     save()
+                    manager.removeEditorSession(it)
                 })
             .append(Component.text(" "))
             .append(Component.text()
@@ -128,6 +158,7 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
                 .color(NamedTextColor.RED)
                 .callback("Discard all changes and revert to previous load") {
                     discard()
+                    manager.removeEditorSession(it)
                 }).build())
     }
 
@@ -137,17 +168,31 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
         player.sendActionBar(Component.text("Interval: ${interval}, Degrees: ${newDegrees}°").color(NamedTextColor.YELLOW))
     }
 
-    private fun getPartMessage(name: String, data: VehiclePart) : TextComponent.Builder {
+    private fun getPartMessage(name: String, data: ModelPart) : TextComponent.Builder {
         val model = data.model
         return (Component.text()
             .content("-- $name --\n")
             .color(NamedTextColor.DARK_PURPLE)
             .append(createVectorCallback("Origin", model.origin))
             .append(createRotationCallback("Rotation", model))
-            .append(createVectorCallback("Scale", model.scale)))
+            .append(createVectorCallback("Scale", model.scale, true)))
+            .append(Component.text().content("\n[Invert]").color(NamedTextColor.GREEN)
+                .callback("Click to flip this part. (Useful for wheels)") {
+                    invertEdit(model)
+                })
+            .append(Component.text(" "))
+            .append(Component.text().content("[Show Collision]").color(NamedTextColor.YELLOW)
+                .callback("Click to show collision box if it's not already being shown") {
+                    showCollision()
+                })
+            .append(Component.text(" "))
+            .append(Component.text().content("[Hide Collision]").color(NamedTextColor.YELLOW)
+                .callback("Click to hide collision box if it's not already hidden") {
+                    hideCollision()
+                })
     }
 
-    private fun createVectorCallback(name: String, vector: Vector3f) : ComponentLike {
+    private fun createVectorCallback(name: String, vector: Vector3f, isScale: Boolean = false) : ComponentLike {
         return Component.text()
             .content("<$name>")
             .color(NamedTextColor.GRAY)
@@ -159,42 +204,42 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
                 Component.text()
                     .content("[+x]")
                     .color(NamedTextColor.GREEN)
-                    .callback("Increase $name's x axis") { edit(vector, VectorEdit.Type.X, interval) }
+                    .callback("Increase $name's x axis") { edit(vector, VectorEdit.Type.X, interval, isScale) }
             )
             .append(Component.text(" "))
             .append(
                 Component.text()
                     .content("[+y]")
                     .color(NamedTextColor.GREEN)
-                    .callback("Increase $name's y axis") { edit(vector, VectorEdit.Type.Y, interval) }
+                    .callback("Increase $name's y axis") { edit(vector, VectorEdit.Type.Y, interval, isScale) }
             )
             .append(Component.text(" "))
             .append(
                 Component.text()
                     .content("[+z]")
                     .color(NamedTextColor.GREEN)
-                    .callback("Increase $name's z axis") { edit(vector, VectorEdit.Type.Z, interval) }
+                    .callback("Increase $name's z axis") { edit(vector, VectorEdit.Type.Z, interval, isScale) }
             )
             .append(Component.text(" | "))
             .append(
                 Component.text()
                     .content("[-x]")
                     .color(NamedTextColor.RED)
-                    .callback("Decrease $name's x axis") { edit(vector, VectorEdit.Type.X, -interval) }
+                    .callback("Decrease $name's x axis") { edit(vector, VectorEdit.Type.X, -interval, isScale) }
             )
             .append(Component.text(" "))
             .append(
                 Component.text()
                     .content("[-y]")
                     .color(NamedTextColor.RED)
-                    .callback("Decrease $name's y axis") { edit(vector, VectorEdit.Type.Y, -interval) }
+                    .callback("Decrease $name's y axis") { edit(vector, VectorEdit.Type.Y, -interval, isScale) }
             )
             .append(Component.text(" "))
             .append(
                 Component.text()
                     .content("[-z]")
                     .color(NamedTextColor.RED)
-                    .callback("Decrease $name's z axis") { edit(vector, VectorEdit.Type.Z, -interval) }
+                    .callback("Decrease $name's z axis") { edit(vector, VectorEdit.Type.Z, -interval, isScale) }
             )
             .append(Component.text("\n"))
     }
@@ -251,27 +296,28 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
             .append(Component.text("\n"))
     }
 
-    private fun save() {
+    fun save() {
         type.save(manager)
         player.sendRichMessage("<yellow>Changes have been saved!")
         this.close()
     }
 
-    private fun discard() {
+    fun discard() {
         type.reload(manager)
         player.sendRichMessage("<yellow>Changes have been discarded!")
         this.close()
     }
 
     private fun close() {
+        collisionBox.destroy()
         manager.removeVehicle(vehicle)
-        manager.getVehicles().filter { it.type == this.type }.forEach { it.update() }
+        manager.getVehicles().filter { it.type == this.type }.forEach { it.apply() }
         player.sendRichMessage("<yellow>Editor session has been closed!")
         isDisposed = true
     }
 
 
-    private fun edit(vector: Vector3f, type: VectorEdit.Type, interval: Float) {
+    private fun edit(vector: Vector3f, type: VectorEdit.Type, interval: Float, isScale: Boolean = false) {
         if(isDisposed) {
             player.sendRichMessage("<red>You cannot perform this edit as the editor session has been closed!")
             return
@@ -279,13 +325,27 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
         val edit = VectorEdit()
         edit.apply(vector) {
             when(type) {
-                VectorEdit.Type.X -> it.add(interval, 0F, 0F)
-                VectorEdit.Type.Y -> it.add(0F, interval, 0F)
-                VectorEdit.Type.Z -> it.add(0F, 0F, interval)
+                VectorEdit.Type.X -> it.x = (if(isScale) max(0F, it.x + interval) else it.x + interval).round(2)
+                VectorEdit.Type.Y -> it.y = (if(isScale) max(0F, it.y + interval) else it.y + interval).round(2)
+                VectorEdit.Type.Z -> it.z = (if(isScale) max(0F, it.z + interval) else it.z + interval).round(2)
             }
         }
         edit(edit)
         player.sendActionBar(Component.text("Vector = [x = ${vector.x}, y = ${vector.y}, z = ${vector.z}]").color(NamedTextColor.YELLOW))
+    }
+
+    private fun invertEdit(model: ModelTransformation) {
+        if(isDisposed) {
+            player.sendRichMessage("<red>You cannot perform this edit as the editor session has been closed!")
+            return
+        }
+        val edit = RotationEdit()
+        edit.apply(model) {
+            it.yaw = ((it.yaw + 180F) % 360F).toInt().toFloat()
+            it.inverted = !it.inverted
+        }
+        edit(edit)
+        player.sendActionBar(Component.text("Inverted model - yaw = ${model.yaw}").color(NamedTextColor.YELLOW))
     }
 
     private fun edit(rotation: ModelTransformation, type: RotationEdit.Type, degrees: Float) {
@@ -294,14 +354,11 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
             return
         }
         val edit = RotationEdit()
-        //todo this should actually be based on a rotation, and the math is done here!
-        // todo check what the difference of localX and non local is
-        // TODO AGH figure
         edit.apply(rotation) {
             when(type) {
-                RotationEdit.Type.YAW -> it.yaw = (it.yaw + degrees) % 360F
-                RotationEdit.Type.PITCH -> it.pitch = (it.pitch + degrees) % 360F
-                RotationEdit.Type.ROLL -> it.roll = (it.roll + degrees) % 360F
+                RotationEdit.Type.YAW -> it.yaw = ((it.yaw + degrees) % 360F).toInt().toFloat()
+                RotationEdit.Type.PITCH -> it.pitch = ((it.pitch + degrees) % 360F).toInt().toFloat()
+                RotationEdit.Type.ROLL -> it.roll = ((it.roll + degrees) % 360F).toInt().toFloat()
             }
         }
         edit(edit)
@@ -310,9 +367,9 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
 
     private fun edit(edit: Edit<*>) {
         editHistory.addLast(edit)
-        vehicle.update()
+        vehicle.apply()
+        collisionBox.apply(vehicle.yaw.get() * -1F)
     }
-
 
     fun undo() {
         if(editHistory.isEmpty()) {
@@ -320,7 +377,7 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
         }
         val edit = editHistory.removeLast()
         edit.undo()
-        vehicle.update()
+        vehicle.apply()
         player.sendActionBar(Component.text().content("Undo Successful").color(NamedTextColor.GREEN))
     }
 }

@@ -9,10 +9,11 @@ import kotlinx.coroutines.*
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.logging.Level
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToLong
 import kotlin.system.measureTimeMillis
 
-abstract class Ticker(protected val plugin: RavinPlugin, private val millis: Long) {
+abstract class Ticker(protected val plugin: RavinPlugin, private val period: Long, private val context: CoroutineContext = Dispatchers.IO) {
     protected val scope = CoroutineScope(plugin.minecraftDispatcher)
     private val metrics: Queue<Long> = ConcurrentLinkedQueue()
     private var max: Long = 0
@@ -20,7 +21,7 @@ abstract class Ticker(protected val plugin: RavinPlugin, private val millis: Lon
         if (!scope.isActive) {
             I.log(Level.WARNING, "Cannot start this ticker as it has already been used!")
         }
-        scope.launch(Dispatchers.IO) {
+        scope.launch(context) {
             if (delay > 0) {
                 delay(delay.ticks)
             }
@@ -39,7 +40,7 @@ abstract class Ticker(protected val plugin: RavinPlugin, private val millis: Lon
                         metrics.poll()
                     }
                 }*/
-                val next = millis - time
+                val next = period - time
                 if (next < 0) {
                     warn(
                         "Ticker is running ${formatMilliseconds(next * -1)} behind! Please consider " +

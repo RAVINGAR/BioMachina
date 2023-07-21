@@ -1,4 +1,4 @@
-package com.ravingarinc.biomachina.model.api
+package com.ravingarinc.biomachina.model
 
 import org.bukkit.World
 
@@ -11,6 +11,11 @@ open class ContainerModel : Model {
 
     fun remove(model: Model) {
         children.remove(model)
+    }
+
+    fun first() : Model? {
+        if(children.isEmpty()) return null
+        return children[0]
     }
 
     val size: Int get() = children.size

@@ -19,7 +19,7 @@ class Individual(private val player: Player) : Viewer {
     override fun destroy() {
         ArrayList(parents).forEach { parent ->
             if(parent is MutableViewGroup) {
-                parent.removeViewer(this)
+                parent.remove(this)
             }
         }
     }
@@ -36,7 +36,7 @@ class Individual(private val player: Player) : Viewer {
         player.sendMessage(message)
     }
 
-    override fun consume(action: (Viewer) -> Unit) {
+    override fun apply(action: (Viewer) -> Unit) {
         action.invoke(this)
     }
 

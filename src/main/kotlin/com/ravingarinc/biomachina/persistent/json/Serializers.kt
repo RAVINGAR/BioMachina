@@ -1,9 +1,7 @@
 package com.ravingarinc.biomachina.persistent.json
 
-import com.ravingarinc.biomachina.vehicle.VehiclePart
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.FloatArraySerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -51,11 +49,5 @@ object QuaternionfSerializer : KSerializer<Quaternionf> {
     override fun deserialize(decoder: Decoder): Quaternionf {
         val array = decoder.decodeSerializableValue(delegateSerializer)
         return Quaternionf(array[0], array[1], array[2], array[3])
-    }
-}
-@Serializable
-class VehicleTypeSurrogate(val identifier: String, val chassisHeight: Float, val chassis: VehiclePart, val frontWheels: List<VehiclePart>, val rearWheels: List<VehiclePart>) {
-    init {
-        require(identifier.isNotEmpty())
     }
 }

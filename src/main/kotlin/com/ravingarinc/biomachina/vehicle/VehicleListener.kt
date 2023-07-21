@@ -1,16 +1,7 @@
 package com.ravingarinc.biomachina.vehicle
 
-import com.comphenix.protocol.ProtocolLibrary
-import com.comphenix.protocol.async.AsyncListenerHandler
-import com.comphenix.protocol.events.ListenerPriority
-import com.comphenix.protocol.events.PacketAdapter
-import com.comphenix.protocol.events.PacketListener
-import com.github.shynixn.mccoroutine.bukkit.launch
-import com.ravingarinc.api.I
-import com.ravingarinc.api.module.ModuleListener
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.api.module.SuspendingModuleListener
-import com.ravingarinc.api.module.log
 import org.bukkit.entity.Boat
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
@@ -18,13 +9,9 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.vehicle.VehicleMoveEvent
-import org.bukkit.util.Vector
 import org.spigotmc.event.entity.EntityDismountEvent
-import org.spigotmc.event.entity.EntityMountEvent
-import java.util.*
-import java.util.logging.Level
 
-class VehicleListener(plugin: RavinPlugin) : SuspendingModuleListener(VehicleListener::class.java, plugin) {
+class VehicleListener(plugin: RavinPlugin) : SuspendingModuleListener(VehicleListener::class.java, plugin, true, VehicleManager::class.java) {
     private lateinit var manager: VehicleManager
     override suspend fun suspendLoad() {
         manager = plugin.getModule(VehicleManager::class.java)
@@ -56,6 +43,9 @@ class VehicleListener(plugin: RavinPlugin) : SuspendingModuleListener(VehicleLis
         manager.getMount(player)?.let {
             it.forceDismount(player)
             manager.unregisterMount(player)
+        }
+        if(manager.hasEditorSession(player)) {
+            manager.discardEditorSession(player)
         }
     }
 

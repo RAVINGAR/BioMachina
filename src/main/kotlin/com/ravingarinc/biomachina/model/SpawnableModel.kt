@@ -1,4 +1,4 @@
-package com.ravingarinc.biomachina.model.api
+package com.ravingarinc.biomachina.model
 
 import org.bukkit.Location
 import org.bukkit.World

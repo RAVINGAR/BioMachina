@@ -6,6 +6,7 @@ import com.ravingarinc.api.module.warn
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.configuration.ConfigurationSection
+import kotlin.math.round
 import kotlin.random.Random
 
 
@@ -16,6 +17,10 @@ fun <T : Module> RavinPlugin.withModule(module: Class<T>, function: T.() -> Unit
     } else {
         warn("Could not execute function with module ${module.name} as this module has not been loaded!")
     }
+}
+
+fun Float.toDegreeBytes() : Byte {
+    return (this * 256.0f / 360.0f).toInt().toByte()
 }
 
 fun formatMilliseconds(milliseconds: Long): String {
@@ -124,5 +129,17 @@ fun parseMaterial(string: String): Material? {
 
 fun Float.toRadians() : Float {
     return (this * Math.PI / 180F).toFloat()
+}
+
+fun Float.round(decimalPlaces: Int) : Float {
+    var multiplier = 1.0
+    repeat(decimalPlaces) { multiplier *= 10 }
+    return (round(this * multiplier) / multiplier).toFloat()
+}
+
+fun Double.round(decimalPlaces: Int) : Double {
+    var multiplier = 1.0
+    repeat(decimalPlaces) { multiplier *= 10 }
+    return round(this * multiplier) / multiplier
 }
 

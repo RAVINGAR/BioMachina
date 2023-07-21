@@ -4,12 +4,12 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.ravingarinc.api.module.warn
 import com.ravingarinc.biomachina.data.ModelData
-import com.ravingarinc.biomachina.persistent.json.VehicleTypeSurrogate
+import com.ravingarinc.biomachina.vehicle.ModelPart
+import com.ravingarinc.biomachina.vehicle.Part.Type
 import com.ravingarinc.biomachina.vehicle.VehicleManager
-import com.ravingarinc.biomachina.vehicle.VehiclePart
-import com.ravingarinc.biomachina.vehicle.VehiclePart.Type
 import com.ravingarinc.biomachina.vehicle.VehicleType
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -31,12 +31,12 @@ class MotorVehicleType(identifier: String,
                        rearWheelAmount: Int) : VehicleType(identifier, passengerSeats, chassisPath, chassisModelData, {
     this[Type.FRONT_WHEEL] = buildList {
         for(i in 0 until frontWheelAmount) {
-            this.add(VehiclePart(ModelData(wheelModelData)))
+            this.add(ModelPart(ModelData(wheelModelData)))
         }
     }
     this[Type.REAR_WHEEL] = buildList {
         for(i in 0 until rearWheelAmount) {
-            this.add(VehiclePart(ModelData(wheelModelData)))
+            this.add(ModelPart(ModelData(wheelModelData)))
         }
     }
 }) {
@@ -74,7 +74,7 @@ class MotorVehicleType(identifier: String,
             val file = File(manager.jsonFolder, "${id}.json")
             if(file.exists()) {
                 FileInputStream(file).use {
-                    val surrogate: VehicleTypeSurrogate = Json.decodeFromStream(it)
+                    val surrogate: MotorVehicleTypeSurrogate = Json.decodeFromStream(it)
                     surrogate
                 }.let {
                     val wheelCmd =
@@ -96,7 +96,7 @@ class MotorVehicleType(identifier: String,
                             rearWheels[i].override(it.rearWheels[i])
                         }
                     }
-                    type.chassisHeight = it.chassisHeight
+                    type.collisionBox.override(it.collision)
                     return type
                 }
             } else {
@@ -112,7 +112,7 @@ class MotorVehicleType(identifier: String,
             val file = File(manager.jsonFolder, "${type.identifier}.json")
             if(file.exists()) {
                 FileInputStream(file).use {
-                    val surrogate: VehicleTypeSurrogate = Json.decodeFromStream(it)
+                    val surrogate: MotorVehicleTypeSurrogate = Json.decodeFromStream(it)
                     surrogate
                 }.let {
                     type.chassis.override(it.chassis)
@@ -128,19 +128,20 @@ class MotorVehicleType(identifier: String,
                             rearWheels[i].override(it.rearWheels[i])
                         }
                     }
-                    type.chassisHeight = it.chassisHeight
+                    type.collisionBox.override(it.collision)
                 }
             } else {
                 type.parts.values.forEach { list ->
                     list.forEach {
-                        it.model.origin.set(Vector3f())
-                        it.model.scale.set(Vector3f())
-                        it.model.yaw = 0F
-                        it.model.pitch = 0F
-                        it.model.roll = 0F
+                        if(it is ModelPart) {
+                            it.model.origin.set(Vector3f())
+                            it.model.scale.set(Vector3f())
+                            it.model.yaw = 0F
+                            it.model.pitch = 0F
+                            it.model.roll = 0F
+                        }
                     }
                 }
-                type.chassisHeight = 0.5F
             }
         }
 
@@ -151,12 +152,19 @@ class MotorVehicleType(identifier: String,
             }
             val writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8)
             writer.use {
-                val json = Json.encodeToString(VehicleTypeSurrogate(type.identifier, type.chassisHeight, type.chassis, type.parts(Type.FRONT_WHEEL), type.parts(Type.REAR_WHEEL)))
+                val json = Json.encodeToString(MotorVehicleTypeSurrogate(type.identifier, type.chassis, type.collisionBox, type.parts(Type.FRONT_WHEEL), type.parts(Type.REAR_WHEEL)))
                 val gson = GsonBuilder().setPrettyPrinting().create()
                 gson.toJson(JsonParser.parseString(json), it)
             }
             return
         }
 
+    }
+}
+
+@Serializable
+class MotorVehicleTypeSurrogate(val identifier: String, val chassis: ModelPart, val collision: ModelPart, val frontWheels: List<ModelPart>, val rearWheels: List<ModelPart>) {
+    init {
+        require(identifier.isNotEmpty())
     }
 }

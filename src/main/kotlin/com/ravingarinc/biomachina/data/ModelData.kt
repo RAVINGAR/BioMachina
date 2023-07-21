@@ -15,9 +15,10 @@ class ModelData(var data: Int,
                 override var yaw: Float = 0F,
                 override var pitch: Float = 0F,
                 override var roll: Float = 0F,
-                override val scale: Vector3f = Vector3f(1F, 1F, 1F)) : ModelTransformation() {
+                override val scale: Vector3f = Vector3f(1F, 1F, 1F),
+                override var inverted: Boolean = false) : ModelTransformation() {
     override fun copy() : ModelData {
-        return ModelData(data, Vector3f(origin), yaw, pitch, roll, Vector3f(scale))
+        return ModelData(data, Vector3f(origin), yaw, pitch, roll, Vector3f(scale), inverted)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -25,6 +26,6 @@ class ModelData(var data: Int,
     }
 
     override fun hashCode(): Int {
-        return Objects.hash(data, origin, yaw, pitch, roll, scale)
+        return Objects.hash(data, origin, yaw, pitch, roll, scale, inverted)
     }
 }

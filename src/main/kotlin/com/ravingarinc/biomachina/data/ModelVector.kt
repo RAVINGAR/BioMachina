@@ -15,10 +15,11 @@ class ModelVector(
     override var yaw: Float = 0F,
     override var pitch: Float = 0F,
     override var roll: Float = 0F,
-    override val scale: Vector3f = Vector3f(1F, 1F, 1F)
+    override val scale: Vector3f = Vector3f(1F, 1F, 1F),
+    override var inverted: Boolean = false
 ) : ModelTransformation() {
 
     override fun copy() : ModelVector {
-        return ModelVector(Vector3f(origin), yaw, pitch, roll, Vector3f(scale))
+        return ModelVector(Vector3f(origin), yaw, pitch, roll, Vector3f(scale), inverted)
     }
 }

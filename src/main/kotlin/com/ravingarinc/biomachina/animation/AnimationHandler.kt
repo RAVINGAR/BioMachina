@@ -19,7 +19,7 @@ import org.bukkit.event.player.PlayerQuitEvent
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(AnimationHandler::class.java, plugin) {
+class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(AnimationHandler::class.java, plugin, true, VehicleManager::class.java) {
 
     private val protocol = ProtocolLibrary.getProtocolManager()
     private lateinit var manager : VehicleManager
@@ -47,7 +47,6 @@ class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(Animation
         // todo we need to prevent any unwanted packets form being sent to the client!
         // just like in actors!
 
-        // is there an issue with multiple exemptIds representing a single controller?
         protocol.addPacketListener(object : PacketAdapter(plugin, ListenerPriority.NORMAL, listOf(PacketType.Play.Server.ENTITY_DESTROY), ListenerOptions.ASYNC) {
             override fun onPacketSending(event: PacketEvent?) {
                 event!!.packet.intLists.readSafely(0)?.let {

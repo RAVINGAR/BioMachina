@@ -3,10 +3,12 @@ package com.ravingarinc.biomachina.command
 import com.github.shynixn.mccoroutine.bukkit.launch
 import com.ravingarinc.api.command.BaseCommand
 import com.ravingarinc.api.module.RavinPlugin
-import com.ravingarinc.biomachina.data.editor.EditorSession
+import com.ravingarinc.biomachina.api.chat.callback
 import com.ravingarinc.biomachina.vehicle.Vehicle
 import com.ravingarinc.biomachina.vehicle.VehicleManager
 import kotlinx.coroutines.Dispatchers
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.ChatColor
 import org.bukkit.Location
 import org.bukkit.Particle
@@ -61,7 +63,7 @@ class BioMachinaCommand(plugin: RavinPlugin) : BaseCommand(
                 sender.sendRichMessage("<red>Could not find world for vehicle summon!")
                 return@addOption true
             }
-            manager.createVehicle(type, Location(world, x, y + 1, z))
+            manager.createVehicle(type, Location(world, x, y, z))
             sender.sendRichMessage("<green>Successfully summoned vehicle!")
             return@addOption true
         }.buildTabCompletions { sender, args ->
@@ -89,7 +91,7 @@ class BioMachinaCommand(plugin: RavinPlugin) : BaseCommand(
             TODO()
         }
 
-        addOption("model", null, "- Edit a vehicle type's transformations", 2) { sender, args ->
+        addOption("editor", null, "- Edit a vehicle type's transformations", 2) { sender, args ->
             val type = Vehicle.Factory.getType(args[1])
             if(type == null) {
                 sender.sendRichMessage("<red>Could not find vehicle type called '${args[1]}'")
@@ -99,16 +101,28 @@ class BioMachinaCommand(plugin: RavinPlugin) : BaseCommand(
                 sender.sendRichMessage("<red>Only a player can use this command!")
                 return@addOption true
             }
-
-
-            //todo save original vehicle type stats here
-
-            //todo add a thing which interrupts chat whilst editing here!
-
-            val session = EditorSession(plugin, type, sender)
-            session.open()
-
+            if(manager.hasEditorSession(sender)) {
+                sender.sendRichMessage("<red>You already have an open editor session!")
+                sender.sendMessage(Component.text()
+                    .content("Would you like to discard your previous session and start a new one?")
+                    .color(NamedTextColor.YELLOW)
+                    .append(Component.text()
+                        .content("\n[Discard and Create]")
+                        .color(NamedTextColor.RED)
+                        .callback(Component.text("Discard previous editor.").color(NamedTextColor.GRAY)) {
+                            if (manager.hasEditorSession(it)) manager.discardEditorSession(it)
+                            manager.openEditorSession(it, type)
+                        }))
+            } else {
+                manager.openEditorSession(sender, type)
+            }
             return@addOption true
+        }.buildTabCompletions { _, args ->
+            if(args.size == 2) {
+                return@buildTabCompletions ArrayList(Vehicle.Factory.getTypes())
+            }
+
+            return@buildTabCompletions emptyList<String>()
         }
 
         addHelpOption(ChatColor.LIGHT_PURPLE, ChatColor.DARK_PURPLE)

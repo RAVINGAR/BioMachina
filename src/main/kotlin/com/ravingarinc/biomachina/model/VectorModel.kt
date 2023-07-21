@@ -1,16 +1,19 @@
-package com.ravingarinc.biomachina.model.api
+package com.ravingarinc.biomachina.model
 
-import com.ravingarinc.biomachina.api.toRadians
+import com.ravingarinc.biomachina.animation.AnimationUtilities
 import org.joml.Quaternionf
 import org.joml.Vector3f
 
 interface VectorModel {
+
     val origin: Vector3f
     val leftRotation: Quaternionf
     val rightRotation: Quaternionf
     val scale: Vector3f
 
     val rotatingOrigin: Vector3f
+
+    var inverted: Boolean
 
     /**
      * Pitch rotates on the x-axis
@@ -29,7 +32,7 @@ interface VectorModel {
     /**
      * Reapply the transformation
      */
-    fun reapply()
+    fun apply(yaw: Float)
 
     /**
      * Pitch rotates on the x-axis. This is always relative for the specific model
@@ -52,39 +55,27 @@ interface VectorModel {
     /**
      * Add this number of degrees to the relative pitch.
      */
-    fun rotatePitch(degrees: Float) {
-        val old = relPitch
-        relPitch = (relPitch + degrees) % 360
-        rightRotation.rotateX((relPitch - old).toRadians())
+    fun rotatePitch(rads: Float) {
+        relPitch = (relPitch + rads) % AnimationUtilities.FULL_ROTATION
     }
 
     /**
      * Add this number of degrees to the relative yaw
      */
-    fun rotateYaw(degrees: Float) {
-        val old = relYaw
-        relYaw = (relYaw + degrees) % 360
-        rightRotation.rotateY((relYaw - old).toRadians())
+    fun rotateYaw(rads: Float) {
+        relYaw = (relYaw + rads) % AnimationUtilities.FULL_ROTATION
     }
 
     /**
      * Add this number of degrees to the relative roll
      */
-    fun rotateRoll(degrees: Float) {
-        val old = relRoll
-        relRoll = (relRoll + degrees) % 360
-        rightRotation.rotateZ((relRoll - old).toRadians())
+    fun rotateRoll(rads: Float) {
+        relRoll = (relRoll + rads) % AnimationUtilities.FULL_ROTATION
     }
 
-    fun totalYaw() : Float {
-        return relYaw
+    fun addOffset(offset: Vector3f) {
+        //todo
     }
 
-    fun totalPitch() : Float {
-        return relPitch
-    }
-
-    fun totalRoll() : Float {
-        return relRoll
-    }
+    fun update()
 }

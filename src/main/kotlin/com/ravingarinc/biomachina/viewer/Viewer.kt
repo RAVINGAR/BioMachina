@@ -30,7 +30,7 @@ interface Viewer {
     fun sendPacket(vararg packet: PacketContainer)
     operator fun contains(viewer: Viewer): Boolean
     fun sendMessage(message: String)
-    fun consume(action: (Viewer) -> Unit)
+    fun apply(action: (Viewer) -> Unit)
 
     val uniqueId: UUID
 }
