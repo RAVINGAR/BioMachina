@@ -1,5 +1,3 @@
-general:
-
 models:
   # The item to use for custom models for this plugin. Choose an item that isn't used by another part of your resource-pack
   custom_model_item: PAPER

@@ -4,6 +4,7 @@ import com.github.shynixn.mccoroutine.bukkit.launch
 import com.ravingarinc.api.command.BaseCommand
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.biomachina.api.chat.callback
+import com.ravingarinc.biomachina.api.round
 import com.ravingarinc.biomachina.vehicle.Vehicle
 import com.ravingarinc.biomachina.vehicle.VehicleManager
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +64,7 @@ class BioMachinaCommand(plugin: RavinPlugin) : BaseCommand(
                 sender.sendRichMessage("<red>Could not find world for vehicle summon!")
                 return@addOption true
             }
-            manager.createVehicle(type, Location(world, x, y, z))
+            manager.createVehicle(type, Location(world, x.round(2), y.round(2), z.round(2)))
             sender.sendRichMessage("<green>Successfully summoned vehicle!")
             return@addOption true
         }.buildTabCompletions { sender, args ->

@@ -2,7 +2,7 @@ package com.ravingarinc.biomachina.model
 
 import org.bukkit.World
 
-open class ContainerModel : Model {
+open class ContainerModel : Model, Iterable<Model> {
     override var parent: Model? = null
     protected val children: MutableList<Model> = ArrayList()
     fun add(model: Model) {
@@ -28,6 +28,20 @@ open class ContainerModel : Model {
 
     override fun destroy() {
         forEach { it.destroy() }
+    }
+
+    override fun iterator(): Iterator<Model> {
+        return object : Iterator<Model> {
+            private var i = 0
+            override fun hasNext(): Boolean {
+                return i + 1 < children.size
+            }
+
+            override fun next(): Model {
+                return children[i++]
+            }
+
+        }
     }
 
     override fun forEach(consumer: (Model) -> Unit) {

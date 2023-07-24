@@ -1,9 +1,8 @@
 package com.ravingarinc.biomachina.model
 
 import org.bukkit.World
+import org.joml.Matrix3f
 import org.joml.Vector3f
-import kotlin.math.cos
-import kotlin.math.sin
 
 interface Model {
     val parent: Model?
@@ -20,10 +19,24 @@ interface Model {
 
     fun forEach(consumer: (Model) -> Unit)
 
-    fun calculateRotationOffset(x: Float, z: Float, rads: Float): Vector3f {
+    fun calculateRotationOffset(x: Float, y: Float, z: Float, yaw: Float, pitch: Float, roll: Float): Vector3f {
+        // Construct the rotation matrix (yaw -> pitch -> roll)
+        val rotationMatrix = Matrix3f()
+            .rotateY(yaw)
+            .rotateX(pitch)
+            .rotateZ(roll)
+
+        // Apply the rotation matrix to the original coordinates
+        val resultVec = Vector3f()
+        rotationMatrix.transform(Vector3f(x, y, z), resultVec)
+        return Vector3f(resultVec.x - x, resultVec.y - y, resultVec.z - z)
+    }
+
+    /*
+    fun calculateRotationOffset(x: Float, z: Float, yaw: Float): Vector3f {
         // Calculate the sine and cosine of the angle
-        val sinY = sin(rads)
-        val cosY = cos(rads)
+        val sinY = sin(yaw)
+        val cosY = cos(yaw)
 
         // Calculate the x and z coordinates based on the rotation
         return Vector3f(
@@ -31,4 +44,5 @@ interface Model {
             0F,
             (-sinY * x + cosY * z) - z)
     }
+    */
 }

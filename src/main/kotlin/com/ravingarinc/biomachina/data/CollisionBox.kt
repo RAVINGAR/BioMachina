@@ -6,7 +6,7 @@ import org.bukkit.util.Vector
 import kotlin.math.max
 import kotlin.math.min
 
-class CollisionBox(x1: Double, y1: Double, z1: Double, x2: Double, y2: Double, z2: Double) {
+class CollisionBox(x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float) {
     protected val minX = min(x1, x2)
     protected val minY = min(y1, y2)
     protected val minZ = min(z1, z2)
@@ -24,8 +24,13 @@ class CollisionBox(x1: Double, y1: Double, z1: Double, x2: Double, y2: Double, z
     private var lastRoll: Float = 0F
 
     private var lastFront: Vector? = null
+    private var lastBottom: Vector? = null
 
-    val height: Double get() = maxY - minY
+    private val absoluteCentre: Vector by lazy {
+        Vector((minX + maxX) / 2F, (minY + maxY) / 2F, (minZ + maxZ) / 2F)
+    }
+
+    val height: Float get() = maxY - minY
 
     /**
      * Returns a vector representing the front and top of the collision box
@@ -40,10 +45,34 @@ class CollisionBox(x1: Double, y1: Double, z1: Double, x2: Double, y2: Double, z
                 // yaw is 0 when facing south (positive z)
                 // If the front plane is represented by highest x and z. Then facing
                 // with -90 yaw is considered Forward (so we must rotate from that)
-                val vector = Vector(maxX, maxY, (maxZ + minZ) / 2.0)
-                return vector.rotate(Location.normalizeYaw(yaw + 90F), pitch) // Idk if this is right
+
+
+                val vector = Vector((maxX + minX) / 2F, maxY, maxZ)
+                    .rotate(Location.normalizeYaw(yaw - 90F), pitch)
+                lastFront = vector
+                return vector
             }
         }
         return lastFront!! // If this throws here this is a concurrency issue
+    }
+
+    fun getAbsoluteCentre() : Vector {
+        return absoluteCentre
+    }
+
+    fun getCentreBottom(yaw: Float, pitch: Float, roll: Float) : Vector {
+        lastBottom.let {
+            if(it == null || yaw != lastYaw || pitch != lastPitch || roll != lastRoll) {
+                lastYaw = yaw
+                lastPitch = pitch
+                lastRoll = roll
+
+                val vector = Vector((minX + maxX) / 2F, minY, (minZ + maxZ) / 2F)
+                    .rotate(Location.normalizeYaw(yaw - 90F), pitch)
+                lastBottom = vector
+                return vector
+            }
+        }
+        return lastBottom!!
     }
 }

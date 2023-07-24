@@ -4,6 +4,8 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.ravingarinc.api.module.warn
 import com.ravingarinc.biomachina.data.ModelData
+import com.ravingarinc.biomachina.data.ModelVector
+import com.ravingarinc.biomachina.vehicle.CollidablePart
 import com.ravingarinc.biomachina.vehicle.ModelPart
 import com.ravingarinc.biomachina.vehicle.Part.Type
 import com.ravingarinc.biomachina.vehicle.VehicleManager
@@ -22,21 +24,22 @@ import java.nio.file.Files
 import java.util.*
 
 class MotorVehicleType(identifier: String,
+                       height: Float,
                        passengerSeats: Int,
                        chassisPath: String,
                        val wheelPath: String,
                        chassisModelData: Int,
                        wheelModelData: Int,
                        frontWheelAmount: Int,
-                       rearWheelAmount: Int) : VehicleType(identifier, passengerSeats, chassisPath, chassisModelData, {
+                       rearWheelAmount: Int) : VehicleType(identifier, height, passengerSeats, chassisPath, chassisModelData, {
     this[Type.FRONT_WHEEL] = buildList {
         for(i in 0 until frontWheelAmount) {
-            this.add(ModelPart(ModelData(wheelModelData)))
+            this.add(CollidablePart(ModelData(wheelModelData), ModelVector()))
         }
     }
     this[Type.REAR_WHEEL] = buildList {
         for(i in 0 until rearWheelAmount) {
-            this.add(ModelPart(ModelData(wheelModelData)))
+            this.add(CollidablePart(ModelData(wheelModelData), ModelVector()))
         }
     }
 }) {
@@ -57,6 +60,7 @@ class MotorVehicleType(identifier: String,
         @OptIn(ExperimentalSerializationApi::class)
         override fun load(manager: VehicleManager, section: ConfigurationSection): MotorVehicleType? {
             val id = section.name
+            val height = section.getDouble("height", 1.0).toFloat()
             val seats = section.getInt("passenger_seats", 0)
             val chassisModel : String? = section.getString("chassis.model")?.replace(".json", "");
             if(chassisModel == null) {
@@ -81,7 +85,7 @@ class MotorVehicleType(identifier: String,
                         if(it.frontWheels.isNotEmpty()) it.frontWheels[0].model.data
                         else (if(it.rearWheels.isNotEmpty()) it.rearWheels[0].model.data else -1)
 
-                    val type = MotorVehicleType(id, seats, chassisModel, wheelModel, it.chassis.model.data, wheelCmd, frontAmount, rearAmount)
+                    val type = MotorVehicleType(id, height, seats, chassisModel, wheelModel, it.chassis.model.data, wheelCmd, frontAmount, rearAmount)
 
                     type.chassis.override(it.chassis)
                     val frontWheels = type.parts(Type.FRONT_WHEEL)
@@ -96,12 +100,11 @@ class MotorVehicleType(identifier: String,
                             rearWheels[i].override(it.rearWheels[i])
                         }
                     }
-                    type.collisionBox.override(it.collision)
                     return type
                 }
             } else {
                 val cmd = manager.getNextModelData()
-                val type = MotorVehicleType(id, seats, chassisModel, wheelModel, "${cmd}0".toInt(), "${cmd}1".toInt(), frontAmount, rearAmount)
+                val type = MotorVehicleType(id, height, seats, chassisModel, wheelModel, "${cmd}0".toInt(), "${cmd}1".toInt(), frontAmount, rearAmount)
                 save(manager, type)
                 return type
             }
@@ -115,6 +118,7 @@ class MotorVehicleType(identifier: String,
                     val surrogate: MotorVehicleTypeSurrogate = Json.decodeFromStream(it)
                     surrogate
                 }.let {
+                    type.height = it.height
                     type.chassis.override(it.chassis)
                     val frontWheels = type.parts(Type.FRONT_WHEEL)
                     for(i in frontWheels.indices) {
@@ -128,7 +132,6 @@ class MotorVehicleType(identifier: String,
                             rearWheels[i].override(it.rearWheels[i])
                         }
                     }
-                    type.collisionBox.override(it.collision)
                 }
             } else {
                 type.parts.values.forEach { list ->
@@ -152,7 +155,7 @@ class MotorVehicleType(identifier: String,
             }
             val writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8)
             writer.use {
-                val json = Json.encodeToString(MotorVehicleTypeSurrogate(type.identifier, type.chassis, type.collisionBox, type.parts(Type.FRONT_WHEEL), type.parts(Type.REAR_WHEEL)))
+                val json = Json.encodeToString(MotorVehicleTypeSurrogate(type.identifier, type.height, type.chassis, type.parts(Type.FRONT_WHEEL), type.parts(Type.REAR_WHEEL)))
                 val gson = GsonBuilder().setPrettyPrinting().create()
                 gson.toJson(JsonParser.parseString(json), it)
             }
@@ -163,7 +166,7 @@ class MotorVehicleType(identifier: String,
 }
 
 @Serializable
-class MotorVehicleTypeSurrogate(val identifier: String, val chassis: ModelPart, val collision: ModelPart, val frontWheels: List<ModelPart>, val rearWheels: List<ModelPart>) {
+class MotorVehicleTypeSurrogate(val identifier: String, val height: Float, val chassis: CollidablePart, val frontWheels: List<CollidablePart>, val rearWheels: List<CollidablePart>) {
     init {
         require(identifier.isNotEmpty())
     }

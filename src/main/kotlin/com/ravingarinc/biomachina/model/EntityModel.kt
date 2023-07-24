@@ -54,6 +54,7 @@ interface EntityModel : Model {
     }
 
     fun show(version: Version) : PacketContainer? {
+
         entity?.let {
             val loc = it.location
             return version.spawnEntity(it.entityId, it.uniqueId, it.type, loc.x, loc.y, loc.z, loc.pitch.toDegreeBytes(), loc.yaw.toDegreeBytes(), 0)

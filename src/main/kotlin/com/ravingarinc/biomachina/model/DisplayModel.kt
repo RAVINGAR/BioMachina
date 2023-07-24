@@ -7,6 +7,7 @@ import com.ravingarinc.api.Version
 import com.ravingarinc.api.build
 import com.ravingarinc.biomachina.animation.AnimationController
 import com.ravingarinc.biomachina.api.toRadians
+import com.ravingarinc.biomachina.data.CollisionBox
 import com.ravingarinc.biomachina.data.ModelData
 import com.ravingarinc.biomachina.data.ModelTransformation
 import com.ravingarinc.biomachina.data.copy
@@ -25,7 +26,7 @@ import org.joml.Vector3f
 abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTransformation, parent: Model? = null, consumer: (T) -> Unit) : SpawnableModel<T>(entityType, parent, {
     consumer.invoke(it)
     //it.setRotation(180F, 0F)
-}), VectorModel {
+}), CollidableModel {
     final override val origin: Vector3f = if(parent is VectorModel) parent.origin.copy().add(data.origin) else data.origin.copy()
     final override val leftRotation: Quaternionf = Quaternionf(0F, 0F, 0F, 1F)
     final override val rightRotation: Quaternionf = Quaternionf(0F, 0F, 0F, 1F)
@@ -44,6 +45,15 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
 
     abstract val metadata: MutableList<Triple<Int, WrappedDataWatcher.Serializer, Any>>
 
+
+    private var innerCollision: CollisionBox? = null
+    private var collisionVector: ModelTransformation? = null
+
+    override val collisionBox: CollisionBox
+        get() = innerCollision ?: throw IllegalStateException("Cannot get collision box on DisplayModel that does not have collision enabled!")
+
+    override val isCollisionEnabled: Boolean get() = innerCollision != null
+
     init {
         applyAbsoluteRotations()
     }
@@ -57,6 +67,21 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
         if(absRoll != 0F) {
             leftRotation.rotateLocalZ(absRoll.toRadians())
         }
+    }
+
+    fun enableCollision(model: ModelTransformation) {
+        collisionVector = model
+        val scaleX = model.scale.x
+        val scaleY = model.scale.y
+        val scaleZ = model.scale.z
+
+        val oX = model.origin.x
+        val oY = model.origin.y
+        val oZ = model.origin.z
+        innerCollision = CollisionBox(
+            oX + scaleX, oY + scaleY, oZ + scaleZ,
+            oX, oY, oZ
+        )
     }
 
     override fun create(x: Double, y: Double, z: Double, world: World) {
@@ -96,6 +121,9 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
             it.interpolationDelay = 0
             it.interpolationDuration = 0
             it.transformation = Transformation(origin.copy().add(rotatingOrigin), leftRotation, scale, rightRotation)
+        }
+        if(isCollisionEnabled) {
+            enableCollision(collisionVector!!)
         }
     }
 
@@ -158,6 +186,7 @@ open class ItemDisplayModel(data: ModelData, parent: Model? = null) : DisplayMod
     }
 
     override fun show(version: Version): PacketContainer? {
+        // Todo doesnt work
         entity?.let {
             val list = buildList {
                 this.build(0, Version.byteSerializer, 0)

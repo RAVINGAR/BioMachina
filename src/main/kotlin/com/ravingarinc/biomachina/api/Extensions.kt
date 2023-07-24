@@ -131,6 +131,10 @@ fun Float.toRadians() : Float {
     return (this * Math.PI / 180F).toFloat()
 }
 
+fun Float.toDegrees() : Float {
+    return (this * 180F / Math.PI).toFloat()
+}
+
 fun Float.round(decimalPlaces: Int) : Float {
     var multiplier = 1.0
     repeat(decimalPlaces) { multiplier *= 10 }

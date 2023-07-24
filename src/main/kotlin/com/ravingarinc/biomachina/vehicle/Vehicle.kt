@@ -66,6 +66,8 @@ interface Vehicle {
 
     fun forceDismount(player: Player) : Boolean
 
+    fun location() : Location
+
     object Factory {
         //todo move this
         // see https://blog.logrocket.com/understanding-kotlin-design-patterns/#factory-abstract-factory-provider-model-kotlin-method

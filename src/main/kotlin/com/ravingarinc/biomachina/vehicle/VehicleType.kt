@@ -2,6 +2,7 @@ package com.ravingarinc.biomachina.vehicle
 
 import com.ravingarinc.api.I
 import com.ravingarinc.biomachina.data.ModelData
+import com.ravingarinc.biomachina.data.ModelVector
 import com.ravingarinc.biomachina.vehicle.Part.Type
 import com.ravingarinc.biomachina.vehicle.motorvehicle.MotorVehicle
 import org.bukkit.configuration.ConfigurationSection
@@ -15,19 +16,16 @@ import java.util.logging.Level
  */
 
 abstract class VehicleType(val identifier: String,
+                           var height: Float,
                            val passengerSeats: Int,
                            val chassisPath: String,
                            chassisModelData: Int,
                            partBuilder: MutableMap<Type<*>, List<Part>>.() -> Unit) {
-    val chassis = ModelPart(ModelData(chassisModelData))
-    val collisionBox = ModelPart(ModelData(-1))
+    val chassis = CollidablePart(ModelData(chassisModelData), ModelVector())
     val parts: Map<Type<*>, List<Part>> = buildMap {
         partBuilder.invoke(this)
         this[Type.CHASSIS] = listOf(chassis)
-        this[Type.COLLISION] = listOf(collisionBox)
     }
-
-    var height: Float = 1.0F
 
     /**
      * Create a vehicle from this type.

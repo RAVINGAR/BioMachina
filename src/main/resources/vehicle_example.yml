@@ -18,6 +18,7 @@
 #   off.
 golf_cart: # Unique identifier
   type: motor_vehicle
+  height: 1.0
   passenger_seats: 1
   chassis:
     # the path for the json file and texture file for this vehicle's chassis. this 'chassis' option is optional,

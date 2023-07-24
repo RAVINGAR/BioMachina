@@ -2,30 +2,37 @@ package com.ravingarinc.biomachina.vehicle.motorvehicle
 
 import com.ravingarinc.biomachina.animation.*
 import com.ravingarinc.biomachina.api.toRadians
+import com.ravingarinc.biomachina.data.CollisionBox
 import com.ravingarinc.biomachina.model.*
 import com.ravingarinc.biomachina.vehicle.Part.Type
 import com.ravingarinc.biomachina.vehicle.VehicleType
 import org.bukkit.entity.Boat
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
-import org.bukkit.inventory.ItemStack
 import org.joml.Quaternionf
 import org.joml.Vector3f
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.min
-
-// Todo change this abstract class as well
 class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
     val interaction = RootModel(SpawnableModel(Interaction::class.java, this) {
         it.interactionHeight = 2F
         it.interactionWidth = 2F
         it.isResponsive = true
     })
+    override val chassis: CollidableModel
+        get() = innerChassis
 
-    // Delegated chassis object.
-    private val chassis = object : VectorModel, RootModel(ItemDisplayModel(type.chassis.model, interaction)) {
-        val item : ItemStack get() = (this.root as ItemDisplayModel).item
+
+
+    private val innerChassis = object : CollidableModel, RootModel(ItemDisplayModel(type.chassis.model, interaction)) {
+        init {
+            (this.root as ItemDisplayModel).enableCollision(type.chassis.collision)
+        }
+        override val collisionBox: CollisionBox
+            get() = (this.root as ItemDisplayModel).collisionBox
+        override val isCollisionEnabled: Boolean
+            get() = (this.root as ItemDisplayModel).isCollisionEnabled
         override val origin: Vector3f get() = (this.root as ItemDisplayModel).origin
         override val leftRotation: Quaternionf get() = (this.root as ItemDisplayModel).leftRotation
         override val rightRotation: Quaternionf get() =(this.root as ItemDisplayModel).rightRotation
@@ -80,31 +87,43 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
         }
     }
 
-    private val frontWheelSet = ContainerModel()
-    private val rearWheelSet = ContainerModel()
+    val frontWheelSet = ContainerModel()
+    val rearWheelSet = ContainerModel()
+
+    /**
+     * If this model has front and rear wheels. False if no wheels or there are either 0 front or 0 rear.
+     */
+    val hasAllWheels: Boolean
+
     private val passengerSeats = ContainerModel()
     init {
         // always add from top to bottom
         //rotations may be fixed if we mount the chassis on another entity?
         add(interaction)
 
-        interaction.add(chassis)
+        interaction.add(innerChassis)
 
-        chassis.add(frontWheelSet)
-        chassis.add(rearWheelSet)
-        chassis.add(passengerSeats)
+        innerChassis.add(frontWheelSet)
+        innerChassis.add(rearWheelSet)
+        innerChassis.add(passengerSeats)
 
 
         type.parts(Type.FRONT_WHEEL).forEach {
-            frontWheelSet.add(ItemDisplayModel(it.model, chassis))
+            val wheel = ItemDisplayModel(it.model, innerChassis)
+            wheel.enableCollision(it.collision)
+            frontWheelSet.add(wheel)
         }
         type.parts(Type.REAR_WHEEL).forEach {
-            rearWheelSet.add(ItemDisplayModel(it.model, chassis))
+            val wheel = ItemDisplayModel(it.model, innerChassis)
+            wheel.enableCollision(it.collision)
+            rearWheelSet.add(wheel)
         }
+
+        hasAllWheels = (frontWheelSet.size > 0 && rearWheelSet.size > 0)
 
         //todo this
         for(i in 0 until type.passengerSeats) {
-            passengerSeats.add(SpawnableModel(Boat::class.java, chassis) {
+            passengerSeats.add(SpawnableModel(Boat::class.java, innerChassis) {
                 it.setGravity(false)
                 it.isInvulnerable = true
                 it.isSilent = true
@@ -115,18 +134,17 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
 
 
     override fun apply(yaw: Float) {
-        this.chassis.forEach {
+        this.innerChassis.forEach {
             if(it is VectorModel) {
                 it.apply(yaw)
             }
         }
-        super.apply(yaw)
     }
 
     @Deprecated("Not needed")
     fun getExemptIds() : Set<Int> {
         return buildSet {
-            this.add(chassis.getEntityId())
+            this.add(innerChassis.getEntityId())
             frontWheelSet.forEach { this.add((it as EntityModel).getEntityId())}
             rearWheelSet.forEach { this.add((it as EntityModel).getEntityId())}
         }
@@ -158,7 +176,7 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
 
     override fun update(controller: AnimationController<*>) {
         controller.sendPacket(buildList {
-            (chassis.root as ItemDisplayModel).let {
+            (innerChassis.root as ItemDisplayModel).let {
                 it.update()
                 this.add(it.getAnimationPacket(controller))
             }
@@ -178,37 +196,73 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
     }
 
     object Animations {
-        fun MotorVehicleModel.buildIdleRotationAnimation(yaw: AtomicReference<Float>) : Animation<MotorVehicleModel> {
+        fun MotorVehicleModel.buildIdleRotationAnimation(yaw: AtomicReference<Float>, pitch: AtomicReference<Float>, roll: AtomicReference<Float>) : Animation<MotorVehicleModel> {
             return object : PersistentAnimation<MotorVehicleModel>("idle_rot") {
                 private val maxSteeringAngle = 0.610865F
                 private var lastYaw: Float = yaw.get()
+                private var lastPitch: Float = pitch.get()
+                private var lastRoll: Float = roll.get()
                 private var lastSteeringAngle: Float = 0F
 
                 override fun tick(controller: AnimationController<MotorVehicleModel>) {
 
-                    // todo
-                    // use a look up table!
+                    // todo use a look up table!
                     // https://www.analyzemath.com/trigonometry/trig_1.gif
 
-                    /*
-                    Right Rotation rotating the X axis will always spin the wheel (as if its moving)
-                    Regardless of the orientation of everything else
-                     */
-
-                    /**
-                     * Need to consider of course. So if a boat's yaw is 0, then the entity models yaw is 180!
-                     * But generally the rotational yaw is also 0
-                     * Basically every tick we should apply a differential.
-                     *
-                     */
-                    //val newYaw = (((yaw.get() - 360F) % 360) * -1).toRadians() // To convert to 360* conversion!
                     val newYaw = yaw.get().toRadians() * -1F
-                    //val newYaw = asin(sin(yaw.get().toRadians()))
-                    if(lastYaw == newYaw) return
-                    var diff = newYaw - lastYaw
+                    val newPitch = pitch.get().toRadians()
+                    val newRoll = roll.get().toRadians()
+                    val yawDiff = calculateRotationDifference(newYaw, lastYaw)
+                    val pitchDiff = calculateRotationDifference(newPitch, lastPitch)
+                    val rollDiff = calculateRotationDifference(newRoll, lastRoll)
 
+                    if(yawDiff == 0F && pitchDiff == 0F && rollDiff == 0F) return
+
+                    // todo OKAY now that we are using radians, for some reason its bugging out a little
+                    // todo fix the diff being -350 TODO check is this fixed?
+                    // this occurs because the previous yaw might be 355 whilst the new one is 5
+
+                    val steeringAngle = calculateSteeringAngle(yawDiff)
+                    val steeringDiff = yawDiff + steeringAngle - lastSteeringAngle
+                    frontWheelSet.forEach { model ->
+                        (model as VectorModel).let {
+                            it.rotateYaw(steeringDiff)
+                            it.rotatePitch(pitchDiff)
+                            it.rotateRoll(rollDiff)
+                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
+                        }
+                    }
+                    lastSteeringAngle = steeringAngle
+
+                    //I.log(Level.WARNING, "Yaw is $newYaw, diff = $diff,with angle of $steeringAngle")
+
+                    (innerChassis.root as VectorModel).let {
+                        it.rotateYaw(yawDiff)
+                        it.rotatePitch(pitchDiff)
+                        it.rotateRoll(rollDiff)
+                        it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
+                    }
+
+                    rearWheelSet.forEach { model ->
+                        (model as VectorModel).let {
+                            it.rotateYaw(yawDiff)
+                            it.rotatePitch(pitchDiff)
+                            it.rotateRoll(rollDiff)
+                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
+                        }
+                    }
+                    lastYaw = newYaw
+                    lastPitch = newPitch
+                    lastRoll = newRoll
+                }
+
+                /**
+                 * Returns a rotational difference, or if difference is too small then 0 is returned.
+                 */
+                fun calculateRotationDifference(newValue: Float, lastValue: Float) : Float {
+                    var diff = newValue - lastValue
                     val abs = abs(diff)
-                    if(abs < 0.005F) return
+                    if(abs < 0.005F) return 0F
                     if(abs > Math.PI) {
                         if(diff < 0F) {
                             diff += AnimationUtilities.FULL_ROTATION
@@ -216,38 +270,12 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                             diff -= AnimationUtilities.FULL_ROTATION
                         }
                     }
-                    // todo OKAY now that we are using radians, for some reason its bugging out a little
-                    // todo fix the diff being -350
-                    // this occurs because the previous yaw might be 355 whilst the new one is 5
-
-                    val steeringAngle = calculateSteeringAngle(diff)
-                    val steeringDiff = diff + steeringAngle - lastSteeringAngle
-                    frontWheelSet.forEach { model ->
-                        (model as VectorModel).let {
-                            it.rotateYaw(steeringDiff)
-                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.z, newYaw)) // need add relative
-                        }
-                    }
-                    lastSteeringAngle = steeringAngle
-
-                    //I.log(Level.WARNING, "Yaw is $newYaw, diff = $diff,with angle of $steeringAngle")
-
-                    (chassis.root as VectorModel).let {
-                        it.rotateYaw(diff)
-                        it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.z, newYaw)) // need add relative
-                    }
-
-                    rearWheelSet.forEach { model ->
-                        (model as VectorModel).let {
-                            it.rotateYaw(diff)
-                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.z, newYaw)) // need add relative
-                        }
-                    }
-                    lastYaw = newYaw
+                    return diff
                 }
 
 
                 fun calculateSteeringAngle(difference: Float): Float {
+                    if(difference == 0F) return 0F
                     val v = maxSteeringAngle * (min(0.15708F, abs(difference)) / 0.15708F)
                     return if(difference < 0F) v * -1 else v
                 }

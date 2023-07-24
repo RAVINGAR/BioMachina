@@ -151,6 +151,10 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     }
 
     override suspend fun suspendCancel() {
+        mountedPlayers.keys.forEach {
+            it.eject()
+        }
+        mountedPlayers.clear()
         editorSessions.forEach { (_, session) ->
             session.discard()
         }

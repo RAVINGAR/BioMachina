@@ -4,7 +4,7 @@ import com.ravingarinc.biomachina.animation.AnimationUtilities
 import org.joml.Quaternionf
 import org.joml.Vector3f
 
-interface VectorModel {
+interface VectorModel : Model {
 
     val origin: Vector3f
     val leftRotation: Quaternionf
@@ -53,23 +53,26 @@ interface VectorModel {
     var relRoll: Float
 
     /**
-     * Add this number of degrees to the relative pitch.
+     * Add this number of radians to the relative pitch.
      */
     fun rotatePitch(rads: Float) {
+        if(rads == 0F) return
         relPitch = (relPitch + rads) % AnimationUtilities.FULL_ROTATION
     }
 
     /**
-     * Add this number of degrees to the relative yaw
+     * Add this number of radians to the relative yaw
      */
     fun rotateYaw(rads: Float) {
+        if(rads == 0F) return
         relYaw = (relYaw + rads) % AnimationUtilities.FULL_ROTATION
     }
 
     /**
-     * Add this number of degrees to the relative roll
+     * Add this number of radians to the relative roll
      */
     fun rotateRoll(rads: Float) {
+        if(rads == 0F) return
         relRoll = (relRoll + rads) % AnimationUtilities.FULL_ROTATION
     }
 
