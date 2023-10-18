@@ -17,7 +17,7 @@ abstract class VehicleModel(val type: VehicleType) : RootModel(SpawnableModel(Bo
      * Reapply changes from model editor session. This should only be called under the circumstance of a session
      * since it is quite computationally expensive.
      */
-    abstract fun apply(yaw: Float)
+    abstract fun apply(yaw: Float, pitch: Float, roll: Float)
 
     abstract fun mountDriver(player: Player) : Boolean
 

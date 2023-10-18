@@ -46,11 +46,21 @@ class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(Animation
 
         // todo we need to prevent any unwanted packets form being sent to the client!
         // just like in actors!
-
         protocol.addPacketListener(object : PacketAdapter(plugin, ListenerPriority.NORMAL, listOf(PacketType.Play.Server.ENTITY_DESTROY), ListenerOptions.ASYNC) {
             override fun onPacketSending(event: PacketEvent?) {
                 event!!.packet.intLists.readSafely(0)?.let {
                     for(id in it) exemptIds[id]?.removeViewer(getIndividual(event.player))
+                }
+            }
+        })
+
+        protocol.addPacketListener(object : PacketAdapter(plugin, ListenerPriority.NORMAL, listOf(PacketType.Play.Client.STEER_VEHICLE), ListenerOptions.ASYNC) {
+            override fun onPacketReceiving(event: PacketEvent?) {
+                val packet = event!!.packet
+                manager.getMount(event.player)?.let {
+                    val sideways = packet.float.read(0)
+                    val forwards = packet.float.read(1)
+                    it.input.update(forwards, sideways)
                 }
             }
         })
@@ -115,7 +125,8 @@ class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(Animation
             warn("Attempted to register vehicle inside AnimationHandler twice! This should not have occurred!")
             return
         }
-        val controller = vehicle.buildAnimationController(this)
+        val controller = vehicle.animationController
+        addExemption(controller)
         controllers[vehicle.uuid] = controller
         vehicle.world.players.forEach { controller.addViewer(getIndividual(it)) }
     }
@@ -124,8 +135,8 @@ class AnimationHandler(plugin: RavinPlugin) : SuspendingModuleListener(Animation
         controllers.remove(vehicle.uuid)?.dispose(this)
     }
 
-    fun addExemption(id: Int, controller: AnimationController<*>) {
-        exemptIds[id] = controller
+    fun addExemption(controller: AnimationController<*>) {
+        exemptIds[controller.entityId] = controller
     }
 
     fun removeExemption(id: Int) {

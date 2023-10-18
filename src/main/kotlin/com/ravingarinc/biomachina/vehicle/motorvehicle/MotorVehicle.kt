@@ -1,16 +1,21 @@
 package com.ravingarinc.biomachina.vehicle.motorvehicle
 
+import com.google.common.util.concurrent.AtomicDouble
 import com.ravingarinc.api.module.warn
 import com.ravingarinc.biomachina.animation.AnimationController
-import com.ravingarinc.biomachina.animation.AnimationHandler
 import com.ravingarinc.biomachina.animation.AnimationUtilities
+import com.ravingarinc.biomachina.api.AtomicInput
 import com.ravingarinc.biomachina.api.round
 import com.ravingarinc.biomachina.api.toRadians
 import com.ravingarinc.biomachina.model.CollidableModel
+import com.ravingarinc.biomachina.model.ContainerModel
 import com.ravingarinc.biomachina.vehicle.Vehicle
 import com.ravingarinc.biomachina.vehicle.VehicleManager
 import com.ravingarinc.biomachina.vehicle.motorvehicle.MotorVehicleModel.Animations.buildIdleRotationAnimation
 import com.ravingarinc.biomachina.vehicle.motorvehicle.MotorVehicleModel.Animations.buildWheelRotationAnimation
+import com.ravingarinc.biomachina.vehicle.stat.*
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 import org.bukkit.*
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Interaction
@@ -21,8 +26,8 @@ import org.bukkit.util.Vector
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.math.abs
-import kotlin.math.atan
+import kotlin.math.*
+import kotlin.system.measureTimeMillis
 
 /**
  * Vehicle represents a Model linked to a driveable entity.
@@ -51,31 +56,62 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
     private var driver: Player? = null
     private val passengers: MutableSet<LivingEntity> = HashSet()
 
+    override val statHolder: StatHolder = StatHolder()
+
     override var isMountable: Boolean = true
 
+    override val input: AtomicInput = AtomicInput()
+
+    /**
+     * The actual speed squared, using the difference in location as a measure
+     */
+    val actualSpeedSquared: AtomicDouble = AtomicDouble(0.0)
+
+    override val animationController: AnimationController<*> by lazy {
+        val controller = AnimationController(model)
+        with(model) {
+            controller.animate(this.buildIdleRotationAnimation(yaw, pitch, roll))
+            controller.animate(this.buildWheelRotationAnimation(speed))
+            // todo more animations!
+        }
+        return@lazy controller
+    }
+
+    /**
+     * Atomic yaw in radians
+     */
     override val yaw = AtomicReference(0F)
+
+    /**
+     * Atomic pitch in radians
+     */
     override val pitch = AtomicReference(0F)
+
+    /**
+     * Atomic roll in radians
+     */
     override val roll = AtomicReference(0F)
+
+    /**
+     * Speed in kilometres per hour
+     */
     override val speed = AtomicReference(0F)
 
-    val terrainHeight: Float = 1.0F // Can only travel one block heights
+    private val velocity = Vector()
 
-    private var innerHasGravity: Boolean = false
-    var hasGravity: Boolean
-        get() = innerHasGravity
-        set(value) {
-            if(value) {
-                if(!innerHasGravity) {
-                    innerHasGravity = true
-                    model.entity?.setGravity(true)
-                }
-            } else {
-                if(innerHasGravity) {
-                    innerHasGravity = false
-                    model.entity?.setGravity(false)
-                }
-            }
-        }
+    val topSpeed: Float get() = statHolder.getStat(Speed).value()
+    val terrainHeight: Float get() = statHolder.getStat(TerrainHeight).value()
+
+    val acceleration: Float get() = statHolder.getStat(Acceleration).value()
+
+    val brakingPower: Float get() = statHolder.getStat(BrakingPower).value()
+
+    companion object {
+        private val minimalRange = (-0.05F..0.05F)
+        private val traversalFactor = 5F
+        private val speedConverterFactor = 1000F / 60F / 60F / 20F
+        private val swayBarDiff = 0.5F
+    }
 
     override val isDestroyed: Boolean
         get() = model.entity == null
@@ -103,18 +139,7 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
     }
 
     override fun apply() {
-        model.apply(yaw.get().toRadians() * -1F)
-    }
-
-    override fun buildAnimationController(handler: AnimationHandler): AnimationController<*> {
-        val controller = AnimationController(handler, model)
-        with(model) {
-            controller.animate(this.buildIdleRotationAnimation(yaw, pitch, roll))
-            controller.animate(this.buildWheelRotationAnimation(speed))
-            // todo more animations!
-        }
-
-        return controller
+        model.apply(yaw.get(), pitch.get(), roll.get())
     }
 
     override fun start(player: Player) {
@@ -126,113 +151,176 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
     }
 
     /**
-     * Executed as sync every 5 ticks
+     * Executed as sync every 1 tick
      */
     override fun tick() {
-        model.entity!!.let {
-            val location = it.location
-            val vector = location.toVector()
+        val time = measureTimeMillis {
+            model.entity!!.let {
+                val motion = input.motion()
+                // Positive is forward, negative is backwards.
+                val forwardMotion = motion.z.toFloat()
+                val location = it.location
 
 
-            tickSpeed(vector, it)
-            tickHeight(location, it)
+                tickSpeed(forwardMotion)
 
-            // todo Fuel Consumption
+                // Todo tickCollision()
+                tickHeight(location, it)
+                tickVelocity()
 
-            lastLocation = vector
+                // Todo tickFuel()
+
+                val vector = location.toVector()
+                actualSpeedSquared.set(lastLocation.distanceSquared(vector))
+                lastLocation = vector
+                it.velocity = velocity
+            }
+        }
+        if(time > 1) {
+            warn("Vehicle Tick took $time ms!")
         }
     }
 
-    private fun tickSpeed(location: Vector, entity: Entity) {
-        speed.set(String.format("%.2f", lastLocation.distanceSquared(location)).toFloat())
+    override fun tickUI() {
+        driver?.let {
+            val builder = Component.text()
+            builder.append(Component.text("< Speed - ").color(NamedTextColor.YELLOW))
+            val speed = speed.get().toInt()
+            val size = speed.toString().length
+            for(i in size until 3) {
+                builder.append(Component.text(" "))
+            }
+            builder.append(Component.text("$speed km/h").color(NamedTextColor.GOLD))
+            builder.append(Component.text(" >").color(NamedTextColor.GRAY))
+            it.sendActionBar(builder)
+        }
+    }
+
+    private fun tickVelocity() {
+        val speed = this.speed.get()
+        if(speed == 0F) {
+            velocity.x = 0.0
+            velocity.z = 0.0
+            return
+        }
+        // Remember speed is always in kilometres an hour so we must calculate here.
+        val metersPerTick = speed * speedConverterFactor
+        val yaw = yaw.get() * -1F
+        velocity.setX(-sin(yaw) * metersPerTick)
+        velocity.setZ(cos(yaw) * metersPerTick)
+    }
+
+    private fun tickSpeed(forwardMotion: Float) {
+        val lastSpeed = speed.get()
+        if(forwardMotion == 0F) {
+            // If 0, we should slow down at a static rate
+            if(lastSpeed == 0F) return
+            speed.set(max(0F, lastSpeed - 1F))
+            return
+        } else if(forwardMotion > 0F) {
+            val top = topSpeed
+            if(lastSpeed < top) speed.set(min(lastSpeed + (acceleration / 20F * forwardMotion), topSpeed))
+        } else {
+            speed.set(max(lastSpeed + (brakingPower / 20F * forwardMotion), -10F))
+        }// TODO Fix me there is wheel sync shift phase somewhere. Something must have changed...
     }
 
     private fun tickHeight(location: Location, entity: Entity) {
-        val speed = speed.get()
-        if(speed == 0F) {
-            entity.velocity = entity.velocity.setY(0)
-            return
-        }
+        // Todo add a suitable check here to not run the below if the vehicle is stationary
+        if(speed.get() == 0F && velocity.isZero && input.hasNoInput) return
         if(model.hasAllWheels) {
-            tickHeightGround(speed, location, entity)
+            tickHeightGround(location, entity)
         } else {
-            tickHeightHover(speed, location, entity)
+            tickHeightHover(location, entity)
         }
     }
 
-    private fun tickHeightGround(speed: Float, location: Location, entity: Entity) {
+    private fun tickHeightGround(location: Location, entity: Entity) {
         val yaw = yaw.get()
         val pitch = pitch.get()
         val roll = roll.get()
 
-        var frontDiff = 0F
-        var frontVector: Vector? = null
-        for(wheel in model.frontWheelSet) {
-            frontVector = (wheel as CollidableModel).collisionBox.getCentreBottom(yaw, pitch, roll)
-            val diff = rayTraceHeight(location, frontVector)
-            if(abs(diff) > abs(frontDiff)) {
-                frontDiff = diff
-            }
-        }
-        var rearDiff = 0F
-        var rearVector: Vector? = null
-        for(wheel in model.rearWheelSet) {
-            rearVector = (wheel as CollidableModel).collisionBox.getCentreBottom(yaw, pitch, roll)
-            val diff = rayTraceHeight(location, rearVector)
-            if(abs(diff) > abs(rearDiff)) {
-                rearDiff = diff
-            }
-        }
-        if(frontDiff == 0F && rearDiff == 0F) {
-            warn("1. Debug -> Cruising!")
-            val velocity = entity.velocity
+        val chassisHeight = model.chassis.collisionBox.height
+        val frontInfo = performTraces(model.frontWheelSet, location, chassisHeight, yaw, pitch, roll)
+        val rearInfo = performTraces(model.rearWheelSet, location, chassisHeight, yaw, pitch, roll)
+
+        if((minimalRange.contains(frontInfo.height) && minimalRange.contains(rearInfo.height))
+            || (frontInfo.height == 0F && rearInfo.height == 0F)
+            || frontInfo.zeroTraces + rearInfo.zeroTraces >= (frontInfo.totalTraces + rearInfo.totalTraces) * 0.75) {
+            //warn("1. Debug -> Cruising!")
             if(velocity.y != 0.0) {
                 if(pitch != 0F) this.pitch.set(0F)
                 if(roll != 0F) this.roll.set(0F)
-                entity.velocity = velocity.setY(0.0)
+                velocity.setY(0.0)
             }
             return
         }
 
-        if(frontDiff == rearDiff) {
+        if(frontInfo.height == rearInfo.height) {
             if(pitch != 0F) this.pitch.set(0F)
             if(roll != 0F) this.roll.set(0F)
         } else {
-            if(frontVector == null || rearVector == null) return
-            val xDiff = (frontVector.x - rearVector.x).toFloat()
-            val zDiff = (frontVector.z - rearVector.z).toFloat()
+            val xDiff = (frontInfo.vector.x - rearInfo.vector.x).toFloat()
+            val zDiff = (frontInfo.vector.z - rearInfo.vector.z).toFloat()
             val horizontalDistance = AnimationUtilities.quickSqrt((xDiff * xDiff) + (zDiff * zDiff))
             // The angle we are calculating is from the rear to the front. AKA The right angle is at the base of the front
             // wheel. As such the hypotenuse in this case is the unknown, as we know only the opposite and adjacent.
             // Opposite side (vertical), is the yDiff, whilst horizontal distance is the adjacent
-            val newPitch = atan(abs(rearDiff - frontDiff) / horizontalDistance) // Determine pitch
+            val factor = if(frontInfo.height < 0F) 2F else -2F
+            val absDiff = abs(rearInfo.height - frontInfo.height)
+            val newPitch = atan(absDiff / horizontalDistance) / factor // Determine pitch
             if(newPitch != pitch) this.pitch.set(newPitch)
 
-            // Todo if you really want roll calculations? So its like climbing terrain properly lol
-        }
-        val averageDiff = (frontDiff + rearDiff) / 2F
-        if(averageDiff == 0F) {
-            // Cruising
-            warn("1. Debug -> Cruising - b!")
-            val velocity = entity.velocity
-            if(velocity.y != 0.0) entity.velocity = velocity.setY(0F)
-        } else if(averageDiff > 0F) {
-            warn("1. Debug -> Moving Up")
-            if(frontDiff > terrainHeight || rearDiff > terrainHeight) {
-                warn("  2. Debug -> Next Block is too high!")
-                stop(location, entity)
+            /* Todo Implement Roll Calculations Properly, the below bugs out
+            // Since, we set above that the y of the vector is actually the difference in each case
+            if(oldFrontVector == null || oldFrontVector.y == frontVector.y) {
+                if(roll != 0F) this.roll.set(0F)
             } else {
-                warn("  2. Debug -> Scaling terrain!")
-                entity.velocity = entity.velocity.setY(averageDiff / 5.0)
+                val xRollDiff = (frontVector.x - oldFrontVector.x).toFloat()
+                val zRollDiff = (frontVector.z - oldFrontVector.z).toFloat()
+                val rollDist = AnimationUtilities.quickSqrt((xRollDiff * xRollDiff) + (zRollDiff * zRollDiff))
+                val newRoll = atan(absDiff / rollDist) / factor
+                if(newRoll != roll) this.roll.set(newRoll)
+            }
+            */
+        }
+        val averageDiff = ((frontInfo.height + rearInfo.height) / 2F) * (speed.get() * speedConverterFactor)
+        //warn("Front Diff = $frontDiff | Rear Diff = $rearDiff")
+        if(frontInfo.height > rearInfo.height) {
+            // If greater than, means that moving up
+            //warn("1. Debug -> Moving Up")
+            if(frontInfo.height > terrainHeight) {
+                //warn("  2. Debug -> Next Block is too high!")
+                stop(location, entity) // This doesn't actually stop the boat!
+            } else {
+                //warn("  2. Debug -> Scaling terrain!")
+                velocity.setY(averageDiff)
             }
         } else {
-            warn("1. Debug -> Moving Down")
-            entity.velocity = entity.velocity.setY(averageDiff / 5.0)
+            //warn("1. Debug -> Moving Down")
+            velocity.setY(averageDiff)
         }
     }
 
-    private fun tickHeightHover(speed: Float, location: Location, entity: Entity) {
+    private fun performTraces(container: ContainerModel, location: Location, chassisHeight: Float, yaw: Float, pitch: Float, roll: Float) : TraceInfo {
+        var zeroTraces = 0
+        var highestValue = 0F
+        var highestVector = Vector()
+        for(model in container) {
+            val vector = (model as CollidableModel).collisionBox.getCentreBottom(yaw, pitch, roll)
+            val diff = rayTraceHeight(location, vector, chassisHeight)
+            if(diff == 0F) zeroTraces++
+            if(abs(diff) > abs(highestValue)) {
+                highestValue = diff
+                highestVector = vector
+            }
+        }
+        return TraceInfo(highestValue, highestVector, zeroTraces, container.size)
+    }
 
+    private fun tickHeightHover(location: Location, entity: Entity) {
+        TODO("Update me!")
+        /*
         val yaw = yaw.get()
         val pitch = pitch.get()
         val roll = roll.get()
@@ -272,16 +360,18 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
                 warn("1. Debug -> Moving down")
                 entity.velocity = velocity.setY(yDiff / 5.0) // yDiff doesn't need to be negative since it already is
             }
-        }
+        }*/
     }
 
-    private fun rayTraceHeight(location: Location, modelLocation: Vector) : Float {
+    private fun rayTraceHeight(location: Location, modelLocation: Vector, chassisHeight: Float) : Float {
         val bottom = location.clone().add(modelLocation)
-        val result =
-            world.rayTraceBlocks(bottom, Vector(0, -1, 0), (terrainHeight + type.height).toDouble(), FluidCollisionMode.NEVER, true)
-                ?: return -2F
         world.spawnParticle(Particle.VILLAGER_HAPPY, bottom, 5) // <-- Todo remove this
-        return (result.hitPosition.y - location.y + type.height).toFloat().round(1)
+        val bottomY = bottom.y
+        bottom.y = bottomY + chassisHeight + terrainHeight
+        val result =
+            world.rayTraceBlocks(bottom, Vector(0, -1, 0), (terrainHeight * 2F + type.height + chassisHeight).toDouble(), FluidCollisionMode.NEVER, true)
+                ?: return -0.4F * traversalFactor
+        return (result.hitPosition.y - bottomY + type.height).toFloat().round(1)
     }
 
     /**
@@ -304,7 +394,7 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
      */
     override fun sync() {
         model.entity!!.let {
-            yaw.set(it.location.yaw)
+            yaw.set(it.location.yaw.toRadians() * -1F)
         }
     }
 
@@ -395,3 +485,5 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
         passengers.clear()
     }
 }
+
+data class TraceInfo(val height: Float, val vector: Vector, val zeroTraces: Int, val totalTraces: Int)

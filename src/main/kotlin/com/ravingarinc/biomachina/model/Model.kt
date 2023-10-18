@@ -17,14 +17,18 @@ interface Model {
      */
     fun destroy()
 
-    fun forEach(consumer: (Model) -> Unit)
+    /**
+     * Consumes each child and deep children.
+     */
+    fun consumeEach(consumer: (Model) -> Unit)
 
     fun calculateRotationOffset(x: Float, y: Float, z: Float, yaw: Float, pitch: Float, roll: Float): Vector3f {
         // Construct the rotation matrix (yaw -> pitch -> roll)
         val rotationMatrix = Matrix3f()
-            .rotateY(yaw)
-            .rotateX(pitch)
-            .rotateZ(roll)
+
+        if(yaw != 0F) rotationMatrix.rotateY(yaw)
+        if(pitch != 0F) rotationMatrix.rotateX(pitch)
+        if(roll != 0F) rotationMatrix.rotateZ(roll)
 
         // Apply the rotation matrix to the original coordinates
         val resultVec = Vector3f()

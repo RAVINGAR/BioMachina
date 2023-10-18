@@ -1,11 +1,20 @@
 models:
   # The item to use for custom models for this plugin. Choose an item that isn't used by another part of your resource-pack
   custom_model_item: PAPER
+# Hard limits for vehicle stats. In case that enough modifications could go above or below these values.
 stats:
+  # Minimum and maximum speed in kilometres per hour
   speed:
-    min: 0
-    max: 100
-  # How quickly a vehicle accelerates in speed increase per second
+    min: 0.0
+    max: 400.0
+  # Minimum and maximum acceleration as increase in speed as kilometres per hour every second
   acceleration:
-    min: 0
-    max: 10
+    min: 0.0
+    max: 50.0
+  # The minimum and maximum slope that a vehicle can traverse
+  terrain_height:
+    min: 0.0
+    max: 5.0
+  braking_power:
+    min: 1.0
+    max: 5.0

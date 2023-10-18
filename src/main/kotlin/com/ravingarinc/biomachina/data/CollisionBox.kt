@@ -26,7 +26,7 @@ class CollisionBox(x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Fl
     private var lastFront: Vector? = null
     private var lastBottom: Vector? = null
 
-    private val absoluteCentre: Vector by lazy {
+    val absoluteCentre: Vector by lazy {
         Vector((minX + maxX) / 2F, (minY + maxY) / 2F, (minZ + maxZ) / 2F)
     }
 
@@ -56,10 +56,6 @@ class CollisionBox(x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Fl
         return lastFront!! // If this throws here this is a concurrency issue
     }
 
-    fun getAbsoluteCentre() : Vector {
-        return absoluteCentre
-    }
-
     fun getCentreBottom(yaw: Float, pitch: Float, roll: Float) : Vector {
         lastBottom.let {
             if(it == null || yaw != lastYaw || pitch != lastPitch || roll != lastRoll) {
@@ -68,7 +64,7 @@ class CollisionBox(x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Fl
                 lastRoll = roll
 
                 val vector = Vector((minX + maxX) / 2F, minY, (minZ + maxZ) / 2F)
-                    .rotate(Location.normalizeYaw(yaw - 90F), pitch)
+                    .rotate(yaw, pitch)
                 lastBottom = vector
                 return vector
             }

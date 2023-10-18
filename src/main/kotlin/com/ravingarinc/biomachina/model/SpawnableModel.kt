@@ -50,7 +50,7 @@ open class SpawnableModel<T : Entity>(private val entityType: Class<T>,
         entity = null
     }
 
-    override fun forEach(consumer: (Model) -> Unit) {
+    override fun consumeEach(consumer: (Model) -> Unit) {
         consumer.invoke(this)
     }
 }

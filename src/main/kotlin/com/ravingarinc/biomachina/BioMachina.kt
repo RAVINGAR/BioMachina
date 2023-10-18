@@ -21,7 +21,7 @@ class BioMachina : RavinPluginKotlin() {
             Class.forName("com.destroystokyo.paper.Namespaced")
             super.onEnable()
         } catch(exception: ClassNotFoundException) {
-            I.log(Level.SEVERE, "BioMachina requires Paper or a variant of to load! This plugin will now be disabled!")
+            I.log(Level.SEVERE, "BioMachina requires Paper or a fork of to load! This plugin will now be disabled!")
             onDisable()
         } catch(exception: IllegalStateException) {
             I.log(Level.SEVERE, "BioMachina encountered an exception whilst enabling!", exception)

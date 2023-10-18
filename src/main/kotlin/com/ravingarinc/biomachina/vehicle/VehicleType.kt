@@ -1,6 +1,7 @@
 package com.ravingarinc.biomachina.vehicle
 
 import com.ravingarinc.api.I
+import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.biomachina.data.ModelData
 import com.ravingarinc.biomachina.data.ModelVector
 import com.ravingarinc.biomachina.vehicle.Part.Type
@@ -18,6 +19,8 @@ import java.util.logging.Level
 abstract class VehicleType(val identifier: String,
                            var height: Float,
                            val passengerSeats: Int,
+                           val topSpeed: Float,
+                           val acceleration: Float,
                            val chassisPath: String,
                            chassisModelData: Int,
                            partBuilder: MutableMap<Type<*>, List<Part>>.() -> Unit) {
@@ -30,7 +33,7 @@ abstract class VehicleType(val identifier: String,
     /**
      * Create a vehicle from this type.
      */
-    abstract fun build(uuid: UUID = UUID.randomUUID()): MotorVehicle
+    abstract fun build(plugin: RavinPlugin, uuid: UUID = UUID.randomUUID()): MotorVehicle
 
     /**
      * Gets all part models for the given type or an empty list if no such part exists. Somewhat computationally

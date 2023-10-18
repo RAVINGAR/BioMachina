@@ -31,7 +31,7 @@ open class RootModel(val root: EntityModel) : EntityModel, ContainerModel() {
         return object : Iterator<Model> {
             private var i = -1
             override fun hasNext(): Boolean {
-                return i + 1 < children.size
+                return i < children.size
             }
 
             override fun next(): Model {
@@ -45,9 +45,9 @@ open class RootModel(val root: EntityModel) : EntityModel, ContainerModel() {
         }
     }
 
-    override fun forEach(consumer: (Model) -> Unit) {
+    override fun consumeEach(consumer: (Model) -> Unit) {
         consumer.invoke(root)
-        super.forEach(consumer)
+        super.consumeEach(consumer)
     }
 }
 

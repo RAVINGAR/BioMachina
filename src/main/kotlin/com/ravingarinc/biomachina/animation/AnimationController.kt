@@ -11,17 +11,14 @@ import com.ravingarinc.biomachina.viewer.MutableViewGroup
 import com.ravingarinc.biomachina.viewer.Viewer
 import java.util.concurrent.atomic.AtomicBoolean
 
-class AnimationController<T : VehicleModel>(handler: AnimationHandler, val model: T) {
+class AnimationController<T : VehicleModel>(val model: T) {
     private val isDisposed = AtomicBoolean(false)
     private val viewers: MutableViewGroup = Group(model.getEntityUUID())
     private val hidingViewers: MutableViewGroup = Group()
-    private val entityId: Int = model.getEntityId()
+    val entityId: Int = model.getEntityId()
     private val animations: MutableList<Animation<T>> = ArrayList()
 
     val version: Version = Versions.version
-    init {
-        handler.addExemption(entityId, this)
-    }
 
     fun animate(animation: Animation<T>) {
         animations.add(animation)
@@ -53,13 +50,13 @@ class AnimationController<T : VehicleModel>(handler: AnimationHandler, val model
 
     fun show(viewer: Viewer) {
         if(hidingViewers.remove(viewer) && this.viewers.add(viewer)) {
-
+            TODO()
         }
     }
 
     fun hide(viewer: Viewer) {
         if(hidingViewers.add(viewer) && viewers.remove(viewer)) {
-
+            TODO()
         }
     }
 
@@ -67,8 +64,8 @@ class AnimationController<T : VehicleModel>(handler: AnimationHandler, val model
         return PacketHandler.create(type, modifier)
     }
 
-    fun sendPacket(packets: Array<PacketContainer>) {
-        viewers.sendPacket(*packets)
+    fun sendPackets(packets: Iterable<PacketContainer>) {
+        viewers.sendPackets(packets)
     }
 
     fun dispose(handler: AnimationHandler) {

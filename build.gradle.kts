@@ -1,5 +1,3 @@
-
-
 plugins {
     kotlin("jvm") version "1.8.21"
     kotlin("plugin.serialization") version "1.8.21"
@@ -56,6 +54,7 @@ dependencies {
     implementation("com.ravingarinc.api:module:1.4.0")
     implementation("com.ravingarinc.api:version:1.4.0")
     compileOnly("org.jetbrains:annotations:23.1.0")
+
 
     //compileOnly("org.spigotmc:spigot:1.19.4-R0.1-SNAPSHOT:remapped-mojang")
     //compileOnly("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")

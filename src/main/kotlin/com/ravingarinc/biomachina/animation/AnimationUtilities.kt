@@ -29,11 +29,9 @@ object AnimationUtilities {
 }
 
 /**
- * Rotate this vector by the given yaw and pitch in degrees. Returns the same vector
+ * Rotate this vector by the given yaw and pitch in radians. Returns the same vector
  */
-fun Vector.rotate(yawDegrees: Float, pitchDegrees: Float) : Vector {
-    val yaw = Math.toRadians((-1.0f * (yawDegrees + 90.0f)).toDouble())
-    val pitch = Math.toRadians((-pitchDegrees).toDouble())
+fun Vector.rotate(yaw: Float, pitch: Float) : Vector {
     val cosYaw = cos(yaw)
     val cosPitch = cos(pitch)
     val sinYaw = sin(yaw)

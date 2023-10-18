@@ -24,8 +24,8 @@ class Individual(private val player: Player) : Viewer {
         }
     }
 
-    override fun sendPacket(vararg packet: PacketContainer) {
-        packet.forEach { it.send(player) }
+    override fun sendPackets(packets: Iterable<PacketContainer>) {
+        packets.forEach { it.send(player) }
     }
 
     override fun contains(viewer: Viewer): Boolean {

@@ -21,32 +21,31 @@ open class ContainerModel : Model, Iterable<Model> {
     val size: Int get() = children.size
 
     override fun create(x: Double, y: Double, z: Double, world: World) {
-        forEach {
-            it.create(x, y, z, world)
-        }
+        consumeEach { it.create(x, y, z, world) }
     }
 
     override fun destroy() {
-        forEach { it.destroy() }
+        consumeEach { it.destroy() }
     }
+
+    override fun consumeEach(consumer: (Model) -> Unit) {
+        children.forEach {
+            it.consumeEach(consumer)
+        }
+    }
+
 
     override fun iterator(): Iterator<Model> {
         return object : Iterator<Model> {
             private var i = 0
             override fun hasNext(): Boolean {
-                return i + 1 < children.size
+                return i < children.size
             }
 
             override fun next(): Model {
                 return children[i++]
             }
 
-        }
-    }
-
-    override fun forEach(consumer: (Model) -> Unit) {
-        children.forEach {
-            it.forEach(consumer)
         }
     }
 }

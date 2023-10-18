@@ -1,7 +1,6 @@
 package com.ravingarinc.biomachina.vehicle.motorvehicle
 
 import com.ravingarinc.biomachina.animation.*
-import com.ravingarinc.biomachina.api.toRadians
 import com.ravingarinc.biomachina.data.CollisionBox
 import com.ravingarinc.biomachina.model.*
 import com.ravingarinc.biomachina.vehicle.Part.Type
@@ -20,10 +19,6 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
         it.interactionWidth = 2F
         it.isResponsive = true
     })
-    override val chassis: CollidableModel
-        get() = innerChassis
-
-
 
     private val innerChassis = object : CollidableModel, RootModel(ItemDisplayModel(type.chassis.model, interaction)) {
         init {
@@ -78,14 +73,25 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                 (this.root as ItemDisplayModel).relRoll = value
             }
 
-        override fun apply(yaw: Float) {
-            (this.root as ItemDisplayModel).apply(yaw)
+        override fun apply(yaw: Float, pitch: Float, roll: Float) {
+            consumeEach {
+                if(it is VectorModel) {
+                    it.apply(yaw, pitch, roll)
+                }
+            }
         }
 
         override fun update() {
-            (this.root as ItemDisplayModel).update()
+            consumeEach {
+                if(it is VectorModel) {
+                    it.update()
+                }
+            }
         }
     }
+
+    override val chassis: CollidableModel
+        get() = innerChassis
 
     val frontWheelSet = ContainerModel()
     val rearWheelSet = ContainerModel()
@@ -106,7 +112,6 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
         innerChassis.add(frontWheelSet)
         innerChassis.add(rearWheelSet)
         innerChassis.add(passengerSeats)
-
 
         type.parts(Type.FRONT_WHEEL).forEach {
             val wheel = ItemDisplayModel(it.model, innerChassis)
@@ -133,21 +138,8 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
 
 
 
-    override fun apply(yaw: Float) {
-        this.innerChassis.forEach {
-            if(it is VectorModel) {
-                it.apply(yaw)
-            }
-        }
-    }
-
-    @Deprecated("Not needed")
-    fun getExemptIds() : Set<Int> {
-        return buildSet {
-            this.add(innerChassis.getEntityId())
-            frontWheelSet.forEach { this.add((it as EntityModel).getEntityId())}
-            rearWheelSet.forEach { this.add((it as EntityModel).getEntityId())}
-        }
+    override fun apply(yaw: Float, pitch: Float, roll: Float) {
+        this.chassis.apply(yaw, pitch, roll)
     }
 
     override fun mountDriver(player: Player) : Boolean {
@@ -175,7 +167,7 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
     }
 
     override fun update(controller: AnimationController<*>) {
-        controller.sendPacket(buildList {
+        controller.sendPackets(buildList {
             (innerChassis.root as ItemDisplayModel).let {
                 it.update()
                 this.add(it.getAnimationPacket(controller))
@@ -192,7 +184,7 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                     this.add(it.getAnimationPacket(controller))
                 }
             }
-        }.toTypedArray())
+        })
     }
 
     object Animations {
@@ -209,32 +201,14 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                     // todo use a look up table!
                     // https://www.analyzemath.com/trigonometry/trig_1.gif
 
-                    val newYaw = yaw.get().toRadians() * -1F
-                    val newPitch = pitch.get().toRadians()
-                    val newRoll = roll.get().toRadians()
+                    val newYaw = yaw.get()
+                    val newPitch = pitch.get()
+                    val newRoll = roll.get()
                     val yawDiff = calculateRotationDifference(newYaw, lastYaw)
                     val pitchDiff = calculateRotationDifference(newPitch, lastPitch)
                     val rollDiff = calculateRotationDifference(newRoll, lastRoll)
 
                     if(yawDiff == 0F && pitchDiff == 0F && rollDiff == 0F) return
-
-                    // todo OKAY now that we are using radians, for some reason its bugging out a little
-                    // todo fix the diff being -350 TODO check is this fixed?
-                    // this occurs because the previous yaw might be 355 whilst the new one is 5
-
-                    val steeringAngle = calculateSteeringAngle(yawDiff)
-                    val steeringDiff = yawDiff + steeringAngle - lastSteeringAngle
-                    frontWheelSet.forEach { model ->
-                        (model as VectorModel).let {
-                            it.rotateYaw(steeringDiff)
-                            it.rotatePitch(pitchDiff)
-                            it.rotateRoll(rollDiff)
-                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
-                        }
-                    }
-                    lastSteeringAngle = steeringAngle
-
-                    //I.log(Level.WARNING, "Yaw is $newYaw, diff = $diff,with angle of $steeringAngle")
 
                     (innerChassis.root as VectorModel).let {
                         it.rotateYaw(yawDiff)
@@ -243,12 +217,25 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                         it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
                     }
 
+                    val steeringAngle = calculateSteeringAngle(yawDiff)
+                    val steeringDiff = yawDiff + steeringAngle - lastSteeringAngle
+                    frontWheelSet.forEach { model ->
+                        (model as VectorModel).let {
+                            it.rotateYaw(steeringDiff)
+                            //it.rotatePitch(pitchDiff)
+                            it.rotateRoll(rollDiff)
+                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, 0F, newRoll)) // need add relative
+                        }
+                    }
+
+                    lastSteeringAngle = steeringAngle
+
                     rearWheelSet.forEach { model ->
                         (model as VectorModel).let {
                             it.rotateYaw(yawDiff)
-                            it.rotatePitch(pitchDiff)
+                            //it.rotatePitch(pitchDiff)
                             it.rotateRoll(rollDiff)
-                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
+                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, 0F, newRoll)) // need add relative
                         }
                     }
                     lastYaw = newYaw
@@ -261,6 +248,7 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                  */
                 fun calculateRotationDifference(newValue: Float, lastValue: Float) : Float {
                     var diff = newValue - lastValue
+                    if(diff == 0F) return 0F
                     val abs = abs(diff)
                     if(abs < 0.005F) return 0F
                     if(abs > Math.PI) {
@@ -286,22 +274,22 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
             return object : PersistentIntervalAnimation<MotorVehicleModel>("wheel_rot", 5) {
                 private val wheelCircumference: Float
                 init {
-                    (frontWheelSet.first() as? VectorModel).let {
+                    (frontWheelSet.first() as? CollidableModel).let {
                         wheelCircumference = if(it == null) {
                             2F * Math.PI.toFloat() * 0.25F
                         } else {
-                            2F * Math.PI.toFloat() * (0.25F * it.scale.x)
+                            Math.PI.toFloat() * (it.collisionBox.height)
                         }
                     }
                 }
-                private val wheelRotations : Float = Math.PI.toFloat() / 2F
-                override fun tick(controller: AnimationController<MotorVehicleModel>) {
-                    val speedSquared = speed.get()
-                    if(speedSquared == 0F) return
-                    val currentSpeed = AnimationUtilities.quickSqrt(speedSquared) / 5F
-                    //if(currentSpeed == 0F) return
-                    val rotationRads : Float = wheelRotations * currentSpeed / wheelCircumference
+                private val wheelRotations : Float = Math.PI.toFloat() / 5F
+                private val factor = 1000F / 60F / 60F / 20F * 5F
 
+                override fun tick(controller: AnimationController<MotorVehicleModel>) {
+                    val speedInKmH = speed.get()
+                    if(speedInKmH == 0F) return
+                    val newSpeed = min(speedInKmH, 100F) * factor
+                    val rotationRads : Float = (wheelRotations * newSpeed / wheelCircumference).toFloat()
                     frontWheelSet.forEach { model ->
                         (model as VectorModel).rotatePitch(rotationRads)
                     }

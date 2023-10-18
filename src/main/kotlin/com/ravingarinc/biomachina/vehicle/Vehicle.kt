@@ -1,8 +1,9 @@
 package com.ravingarinc.biomachina.vehicle
 
 import com.ravingarinc.biomachina.animation.AnimationController
-import com.ravingarinc.biomachina.animation.AnimationHandler
+import com.ravingarinc.biomachina.api.AtomicInput
 import com.ravingarinc.biomachina.vehicle.motorvehicle.MotorVehicleType
+import com.ravingarinc.biomachina.vehicle.stat.StatHolder
 import org.bukkit.Location
 import org.bukkit.World
 import org.bukkit.entity.Interaction
@@ -20,6 +21,12 @@ interface Vehicle {
     var isMountable: Boolean
 
     val isDestroyed: Boolean
+
+    val animationController: AnimationController<*>
+
+    val statHolder: StatHolder
+
+    val input: AtomicInput
 
     /**
      * The current yaw of the base entity vehicle
@@ -41,13 +48,13 @@ interface Vehicle {
      */
     val speed: AtomicReference<Float>
 
-    fun buildAnimationController(handler: AnimationHandler) : AnimationController<*>
-
     fun create(location: Location)
     fun destroy()
     fun start(player: Player)
     fun stop(player: Player)
     fun tick()
+
+    fun tickUI()
 
     /**
      * Apply any changes from editor

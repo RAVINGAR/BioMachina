@@ -1,12 +1,7 @@
 package com.ravingarinc.biomachina.viewer
 
-import com.comphenix.protocol.ProtocolLibrary
 import com.comphenix.protocol.events.PacketContainer
-import org.bukkit.Location
-import org.bukkit.Sound
 import java.util.*
-import java.util.function.Consumer
-import java.util.function.Function
 
 interface Viewer {
     /**
@@ -27,7 +22,7 @@ interface Viewer {
      * Called when a viewer should be destroyed and all references should be removed
      */
     fun destroy()
-    fun sendPacket(vararg packet: PacketContainer)
+    fun sendPackets(packets: Iterable<PacketContainer>)
     operator fun contains(viewer: Viewer): Boolean
     fun sendMessage(message: String)
     fun apply(action: (Viewer) -> Unit)

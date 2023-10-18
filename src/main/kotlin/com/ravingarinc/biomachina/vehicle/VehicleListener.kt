@@ -54,6 +54,16 @@ class VehicleListener(plugin: RavinPlugin) : SuspendingModuleListener(VehicleLis
         val entity = event.vehicle
         if(entity is Boat) {
             manager.getVehicleById(event.vehicle.entityId)?.sync()
+            /*
+            val direction = event.to.toVector().subtract(event.from.toVector())
+            if(direction.isZero) {
+                return;
+            }
+            entity.velocity = direction.normalize().multiply(0.4)
+
+            //val velocity = entity.passengers[0].velocity
+            //entity.velocity = Vector(velocity.x * 20, 0.0, velocity.z * 20)8
+            */
         }
 
         /*

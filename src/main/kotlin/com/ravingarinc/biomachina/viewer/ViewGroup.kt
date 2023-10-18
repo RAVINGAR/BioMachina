@@ -7,8 +7,8 @@ interface ViewGroup : Viewer {
         apply { viewer: Viewer -> viewer.sendMessage(message) }
     }
 
-    override fun sendPacket(vararg packet: PacketContainer) {
-        apply { viewer: Viewer -> viewer.sendPacket(*packet) }
+    override fun sendPackets(packets: Iterable<PacketContainer>) {
+        apply { viewer: Viewer -> viewer.sendPackets(packets) }
     }
 
     fun size(): Int

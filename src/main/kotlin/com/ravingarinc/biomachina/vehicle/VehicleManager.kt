@@ -11,11 +11,13 @@ import com.ravingarinc.biomachina.api.withModule
 import com.ravingarinc.biomachina.data.editor.EditorSession
 import com.ravingarinc.biomachina.persistent.PersistenceHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import org.bukkit.Location
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.Player
+import org.bukkit.scheduler.BukkitRunnable
 import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -32,6 +34,7 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     private val editorSessions: MutableMap<UUID, EditorSession> = Hashtable()
 
     private lateinit var ticker: VehicleTicker
+    private lateinit var uiTicker: UITicker
 
     val jsonFolder = File(plugin.dataFolder, "json")
 
@@ -60,6 +63,30 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
         } }
         ticker = VehicleTicker(plugin, cachedVehicles.values)
         ticker.start(5)
+        uiTicker = UITicker(cachedVehicles.values)
+        uiTicker.runTaskTimer(plugin, 5, 10)
+    }
+
+    override suspend fun suspendCancel() {
+        uiTicker.cancel()
+        ticker.cancel()
+        mountedPlayers.keys.forEach {
+            it.eject()
+        }
+        mountedPlayers.clear()
+        editorSessions.forEach { (_, session) ->
+            session.discard()
+        }
+        editorSessions.clear()
+
+        cachedVehicles.forEach {
+            it.value.destroy()
+        }
+        cachedVehicles.clear()
+        cachedInteractions.clear()
+        Vehicle.Factory.clear()
+        nextModelData = 0
+        // todo save custom model datas
     }
 
     fun registerMount(player: Player, vehicle: Vehicle) {
@@ -124,8 +151,8 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
     }
 
     fun createVehicle(type: VehicleType, spawnLocation: Location) : Vehicle {
-        val vehicle = type.build()
-        vehicle.create(spawnLocation)
+        val vehicle = type.build(plugin)
+        vehicle.create(spawnLocation.add(0.0, (type.height + type.chassis.collision.height()).toDouble(), 0.0))
         cachedVehicles[vehicle.uuid] = vehicle
         vehicle.boundingBox()?.let {
             cachedInteractions[it] = vehicle.uuid
@@ -148,39 +175,22 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
 
     fun loadVehicle(uuid: UUID, type: VehicleType, location: Location) {
         // also load mods here!
-    }
-
-    override suspend fun suspendCancel() {
-        mountedPlayers.keys.forEach {
-            it.eject()
-        }
-        mountedPlayers.clear()
-        editorSessions.forEach { (_, session) ->
-            session.discard()
-        }
-        editorSessions.clear()
-        ticker.cancel()
-        cachedVehicles.forEach {
-            it.value.destroy()
-        }
-        cachedVehicles.clear()
-        cachedInteractions.clear()
-        Vehicle.Factory.clear()
-        nextModelData = 0
-        // todo save custom model datas
+        // load from database
     }
 
 
-    class VehicleTicker(plugin: RavinPlugin, private val vehicles: Collection<Vehicle>) : Ticker(plugin, 5.ticks, context = plugin.minecraftDispatcher) {
-        private val semaphore: Semaphore = Semaphore(4)
+    class VehicleTicker(plugin: RavinPlugin, private val vehicles: Collection<Vehicle>) : Ticker(plugin, 1.ticks) {
+        private val semaphore: Semaphore = Semaphore(8)
         override suspend fun CoroutineScope.tick() {
             ArrayList(vehicles).forEach {
                 semaphore.acquire()
-                scope.launch {
+                if(!scope.isActive) {
+                    semaphore.release()
+                    return
+                }
+                scope.launch(plugin.minecraftDispatcher) {
                     try {
-                        if(!it.isDestroyed) {
-                            it.tick()
-                        }
+                        if(!it.isDestroyed) it.tick()
                     }
                     finally {
                         semaphore.release()
@@ -188,5 +198,14 @@ class VehicleManager(plugin: RavinPlugin) : SuspendingModule(VehicleManager::cla
                 }
             }
         }
+    }
+
+    class UITicker(private val vehicles: Collection<Vehicle>) : BukkitRunnable() {
+        override fun run() {
+            ArrayList(vehicles).forEach {
+                it.tickUI()
+            }
+        }
+
     }
 }

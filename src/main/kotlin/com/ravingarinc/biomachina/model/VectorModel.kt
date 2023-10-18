@@ -11,7 +11,7 @@ interface VectorModel : Model {
     val rightRotation: Quaternionf
     val scale: Vector3f
 
-    val rotatingOrigin: Vector3f
+    val rotatingOrigin: Vector3f // Todo remove this as its unnecessary
 
     var inverted: Boolean
 
@@ -32,7 +32,7 @@ interface VectorModel : Model {
     /**
      * Reapply the transformation
      */
-    fun apply(yaw: Float)
+    fun apply(yaw: Float, pitch: Float, roll: Float)
 
     /**
      * Pitch rotates on the x-axis. This is always relative for the specific model

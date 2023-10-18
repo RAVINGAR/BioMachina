@@ -93,7 +93,7 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
         }
     }
 
-    override fun apply(yaw: Float) {
+    override fun apply(yaw: Float, pitch: Float, roll: Float) {
         (parent as? VectorModel).let {
             if(it == null) {
                 absYaw = data.yaw
@@ -103,7 +103,6 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
                 origin.set(data.origin.copy())
                 scale.set(data.scale.copy())
                 //rightRotation.set(data.relativeRotation.copy())
-
             } else {
                 absYaw = it.absYaw + data.yaw
                 absPitch = it.absPitch + data.pitch
@@ -116,7 +115,8 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
             leftRotation.set(Quaternionf(0F, 0F, 0F, 1F))
             applyAbsoluteRotations()
         }
-        rotatingOrigin.set(calculateRotationOffset(origin.x, origin.z, yaw))
+        update() // We call update here to update the right rotation as well.
+        rotatingOrigin.set(calculateRotationOffset(origin.x, origin.y, origin.z, yaw, pitch, roll))
         castEntity?.let {
             it.interpolationDelay = 0
             it.interpolationDuration = 0
@@ -165,7 +165,7 @@ open class ItemDisplayModel(data: ModelData, parent: Model? = null) : DisplayMod
     private val metadataInner : MutableList<Triple<Int, WrappedDataWatcher.Serializer, Any>> by lazy {
         val list = ArrayList<Triple<Int, WrappedDataWatcher.Serializer, Any>>()
         list.build(8, Version.integerSerializer, 0) // #0
-        list.build(9, Version.integerSerializer, 1) // #1
+        list.build(9, Version.integerSerializer, 2) // #1 Delay
         list.build(10, Version.V1_19_4.vectorSerializer, origin.copy().add(rotatingOrigin)) // #2
         list.build(11, Version.V1_19_4.vectorSerializer, scale) // #3
         list.build(12, Version.V1_19_4.quaternionSerializer, leftRotation) // #4

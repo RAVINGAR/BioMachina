@@ -7,6 +7,8 @@ import com.ravingarinc.biomachina.persistent.json.Vector3fSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import org.joml.Vector3f
+import kotlin.math.max
+import kotlin.math.min
 
 
 @Serializable
@@ -21,5 +23,11 @@ class ModelVector(
 
     override fun copy() : ModelVector {
         return ModelVector(Vector3f(origin), yaw, pitch, roll, Vector3f(scale), inverted)
+    }
+
+    fun height() : Float {
+        val upperY = origin.y + scale.y
+        if(upperY == origin.y) return 0F
+        return max(origin.y, upperY) - min(origin.y, upperY)
     }
 }

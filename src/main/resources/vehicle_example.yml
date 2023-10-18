@@ -18,7 +18,6 @@
 #   off.
 golf_cart: # Unique identifier
   type: motor_vehicle
-  height: 1.0
   passenger_seats: 1
   chassis:
     # the path for the json file and texture file for this vehicle's chassis. this 'chassis' option is optional,
@@ -32,4 +31,13 @@ golf_cart: # Unique identifier
     # how many rear wheels does this vehicle have. Rear wheels will not steer
     rear_amount: 2
   stats:
-    base_speed: 0.3
+    # This stat is in km/h. Please consider that a boat in water has a top speed of 28.8km/h, blue ice meanwhile has a
+    # top speed of 261.82 km/h
+    top_speed: 100
+    # This stat is the increase in speed in kilometres per hour per second. For example, if this value was
+    # 10.6, this means every second the speed of the vehicle will increase by 10.6 km/h.
+    acceleration: 5.6
+    # This stat controls how steep of a slope this given vehicle can ascend or descend.
+    terrain_height: 1.0
+    # The rate at which a vehicle can slow down. This is actually measured as km/h per second. (Opposite of acceleration)
+    braking_power: 5.0

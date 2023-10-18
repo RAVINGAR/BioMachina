@@ -2,14 +2,20 @@ package com.ravingarinc.biomachina.vehicle.motorvehicle
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
+import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.api.module.warn
 import com.ravingarinc.biomachina.data.ModelData
 import com.ravingarinc.biomachina.data.ModelVector
+import com.ravingarinc.biomachina.persistent.Properties
 import com.ravingarinc.biomachina.vehicle.CollidablePart
 import com.ravingarinc.biomachina.vehicle.ModelPart
 import com.ravingarinc.biomachina.vehicle.Part.Type
 import com.ravingarinc.biomachina.vehicle.VehicleManager
 import com.ravingarinc.biomachina.vehicle.VehicleType
+import com.ravingarinc.biomachina.vehicle.stat.Acceleration
+import com.ravingarinc.biomachina.vehicle.stat.BrakingPower
+import com.ravingarinc.biomachina.vehicle.stat.Speed
+import com.ravingarinc.biomachina.vehicle.stat.TerrainHeight
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -26,12 +32,16 @@ import java.util.*
 class MotorVehicleType(identifier: String,
                        height: Float,
                        passengerSeats: Int,
+                       topSpeed: Float,
+                       acceleration: Float,
+                       val brakingPower: Float,
+                       val terrainHeight: Float,
                        chassisPath: String,
                        val wheelPath: String,
                        chassisModelData: Int,
                        wheelModelData: Int,
                        frontWheelAmount: Int,
-                       rearWheelAmount: Int) : VehicleType(identifier, height, passengerSeats, chassisPath, chassisModelData, {
+                       rearWheelAmount: Int) : VehicleType(identifier, height, passengerSeats, topSpeed, acceleration, chassisPath, chassisModelData, {
     this[Type.FRONT_WHEEL] = buildList {
         for(i in 0 until frontWheelAmount) {
             this.add(CollidablePart(ModelData(wheelModelData), ModelVector()))
@@ -43,9 +53,18 @@ class MotorVehicleType(identifier: String,
         }
     }
 }) {
-    override fun build(uuid: UUID): MotorVehicle {
+    override fun build(plugin: RavinPlugin, uuid: UUID): MotorVehicle {
         //todo more things here? like load stats
-        return MotorVehicle(uuid, this)
+        val vehicle = MotorVehicle(uuid, this)
+        val properties = Properties.getInstance(plugin)
+        val stats = vehicle.statHolder
+
+        stats.registerStat(properties, Speed, topSpeed)
+        stats.registerStat(properties, Acceleration, acceleration)
+        stats.registerStat(properties, BrakingPower, brakingPower)
+        stats.registerStat(properties, TerrainHeight, terrainHeight)
+
+        return vehicle
     }
 
     override fun reload(manager: VehicleManager) {
@@ -60,8 +79,11 @@ class MotorVehicleType(identifier: String,
         @OptIn(ExperimentalSerializationApi::class)
         override fun load(manager: VehicleManager, section: ConfigurationSection): MotorVehicleType? {
             val id = section.name
-            val height = section.getDouble("height", 1.0).toFloat()
             val seats = section.getInt("passenger_seats", 0)
+            val topSpeed = section.getDouble("stats.top_speed", 28.8).toFloat()
+            val terrainHeight = section.getDouble("stats.terrain_height", 1.0).toFloat()
+            val brakingPower = section.getDouble("stats.braking_power", 1.0).toFloat()
+            val acceleration = section.getDouble("stats.acceleration", 3.06).toFloat()
             val chassisModel : String? = section.getString("chassis.model")?.replace(".json", "");
             if(chassisModel == null) {
                 warn("Could not find chassis.model for vehicle type '$id'")
@@ -85,7 +107,7 @@ class MotorVehicleType(identifier: String,
                         if(it.frontWheels.isNotEmpty()) it.frontWheels[0].model.data
                         else (if(it.rearWheels.isNotEmpty()) it.rearWheels[0].model.data else -1)
 
-                    val type = MotorVehicleType(id, height, seats, chassisModel, wheelModel, it.chassis.model.data, wheelCmd, frontAmount, rearAmount)
+                    val type = MotorVehicleType(id, it.height, seats, topSpeed, acceleration, brakingPower, terrainHeight, chassisModel, wheelModel, it.chassis.model.data, wheelCmd, frontAmount, rearAmount)
 
                     type.chassis.override(it.chassis)
                     val frontWheels = type.parts(Type.FRONT_WHEEL)
@@ -104,7 +126,7 @@ class MotorVehicleType(identifier: String,
                 }
             } else {
                 val cmd = manager.getNextModelData()
-                val type = MotorVehicleType(id, height, seats, chassisModel, wheelModel, "${cmd}0".toInt(), "${cmd}1".toInt(), frontAmount, rearAmount)
+                val type = MotorVehicleType(id, 0F, seats, topSpeed, acceleration, brakingPower, terrainHeight, chassisModel, wheelModel, "${cmd}0".toInt(), "${cmd}1".toInt(), frontAmount, rearAmount)
                 save(manager, type)
                 return type
             }

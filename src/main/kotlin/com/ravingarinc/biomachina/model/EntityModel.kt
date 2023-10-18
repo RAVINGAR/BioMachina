@@ -14,11 +14,7 @@ interface EntityModel : Model {
     override fun create(x: Double, y: Double, z: Double, world: World) {
         entity = spawn(x, y, z, world)
         (parent as? EntityModel)?.let { p ->
-            this.forEach {
-                if(it is EntityModel) {
-                    p.addPassenger(it)
-                }
-            }
+            this.consumeEach { if(it is EntityModel) p.addPassenger(it) }
         }
     }
 
@@ -54,7 +50,6 @@ interface EntityModel : Model {
     }
 
     fun show(version: Version) : PacketContainer? {
-
         entity?.let {
             val loc = it.location
             return version.spawnEntity(it.entityId, it.uniqueId, it.type, loc.x, loc.y, loc.z, loc.pitch.toDegreeBytes(), loc.yaw.toDegreeBytes(), 0)

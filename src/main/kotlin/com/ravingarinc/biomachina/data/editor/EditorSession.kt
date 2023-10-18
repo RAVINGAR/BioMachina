@@ -3,7 +3,6 @@ package com.ravingarinc.biomachina.data.editor
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.biomachina.api.chat.callback
 import com.ravingarinc.biomachina.api.round
-import com.ravingarinc.biomachina.api.toRadians
 import com.ravingarinc.biomachina.data.ModelTransformation
 import com.ravingarinc.biomachina.data.copy
 import com.ravingarinc.biomachina.model.VectorModel
@@ -192,7 +191,7 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
                     .callback("Click to show collision box if it's not already being shown") {
                         if(!collisionParts.containsKey(name)) {
                             val collisionModel = data.createCollisionModel(vehicle.location())
-                            collisionModel.apply(vehicle.yaw.get().toRadians() * -1F)
+                            collisionModel.apply(vehicle.yaw.get(), vehicle.pitch.get(), vehicle.roll.get())
                             collisionModel.entity?.isGlowing = true
                             collisionParts[name] = collisionModel
                             send(type, getPartCollisionMessage(name, type, data))
@@ -204,18 +203,19 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
 
     private fun getPartCollisionMessage(name: String, type: Part.Type<*>, data: CollidablePart) : TextComponent.Builder {
         val collision = data.collision
-        return (Component.text()
+        return Component.text()
             .content("-- $name Collision Box --\n")
             .color(NamedTextColor.DARK_PURPLE)
             .append(createVectorCallback("Origin", collision.origin))
             .append(createRotationCallback("Rotation", collision))
-            .append(createVectorCallback("Scale", collision.scale, true)))
-            .append(Component.text(" "))
+            .append(createVectorCallback("Scale", collision.scale, true))
+            .append(Component.text("\n"))
             .append(Component.text().content("[Hide Collision]").color(NamedTextColor.YELLOW)
                 .callback("Click to hide collision box if it's not already hidden") {
                     collisionParts.remove(name)?.destroy()
                     send(type)
                 })
+            .append(Component.text("\n"))
     }
 
     private fun createVectorCallback(name: String, vector: Vector3f, isScale: Boolean = false) : ComponentLike {
@@ -411,7 +411,7 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
         editHistory.addLast(edit)
         vehicle.apply()
         collisionParts.values.forEach {
-            it.apply(vehicle.yaw.get().toRadians() * -1F)
+            it.apply(vehicle.yaw.get(), vehicle.pitch.get(), vehicle.roll.get())
         }
     }
 
@@ -422,6 +422,9 @@ class EditorSession(private val plugin: RavinPlugin, private val type: VehicleTy
         val edit = editHistory.removeLast()
         edit.undo()
         vehicle.apply()
+        collisionParts.values.forEach {
+            it.apply(vehicle.yaw.get(), vehicle.pitch.get(), vehicle.roll.get())
+        }
         player.sendActionBar(Component.text().content("Undo Successful").color(NamedTextColor.GREEN))
     }
 }

@@ -1,7 +1,5 @@
 package com.ravingarinc.biomachina.persistent
 
-import com.ravingarinc.api.I
-import com.ravingarinc.api.module.Module
 import com.ravingarinc.api.module.RavinPlugin
 import com.ravingarinc.api.module.SuspendingModule
 import com.ravingarinc.api.module.warn
@@ -10,7 +8,6 @@ import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.util.logging.Level
 
 class PersistenceHandler(plugin: RavinPlugin) : SuspendingModule(PersistenceHandler::class.java, plugin) {
     private val config: ConfigFile = ConfigFile(plugin, "config.yml")
@@ -38,6 +35,8 @@ class PersistenceHandler(plugin: RavinPlugin) : SuspendingModule(PersistenceHand
                 }
             }
         }
+        Properties.getInstance(plugin)
+        // Todo need to add a thing here to basically reload all the config values
     }
 
     fun getVehicleConfigs() : List<ConfigurationSection> {
