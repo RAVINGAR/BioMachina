@@ -6,6 +6,7 @@ import com.comphenix.protocol.wrappers.WrappedDataWatcher
 import com.ravingarinc.api.Version
 import com.ravingarinc.api.build
 import com.ravingarinc.biomachina.animation.AnimationController
+import com.ravingarinc.biomachina.animation.AnimationUtilities
 import com.ravingarinc.biomachina.api.toRadians
 import com.ravingarinc.biomachina.data.CollisionBox
 import com.ravingarinc.biomachina.data.ModelData
@@ -33,11 +34,12 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
     final override val scale: Vector3f = if(parent is VectorModel) parent.scale.copy().mul(data.scale) else data.scale.copy()
 
     override var inverted: Boolean = data.inverted
+
     override val rotatingOrigin: Vector3f = if(parent is VectorModel) parent.rotatingOrigin.copy() else Vector3f()
 
-    final override var absYaw: Float = if(parent is VectorModel) parent.absYaw + data.yaw else data.yaw
-    final override var absPitch: Float = if(parent is VectorModel) parent.absPitch + data.pitch else data.pitch
-    final override var absRoll: Float = if(parent is VectorModel) parent.absRoll + data.roll else data.roll
+    final override var absYaw: Float = if(parent is VectorModel) (parent.absYaw + data.yaw) % AnimationUtilities.FULL_ROTATION_DEG else data.yaw
+    final override var absPitch: Float = if(parent is VectorModel) (parent.absPitch + data.pitch) % AnimationUtilities.FULL_ROTATION_DEG else data.pitch
+    final override var absRoll: Float = if(parent is VectorModel) (parent.absRoll + data.roll) % AnimationUtilities.FULL_ROTATION_DEG else data.roll
 
     override var relYaw: Float = 0F
     override var relPitch: Float = 0F
@@ -55,9 +57,6 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
     override val isCollisionEnabled: Boolean get() = innerCollision != null
 
     init {
-        applyAbsoluteRotations()
-    }
-    private fun applyAbsoluteRotations() {
         if(absPitch != 0F) {
             leftRotation.rotateLocalX(absPitch.toRadians())
         }
@@ -68,7 +67,6 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
             leftRotation.rotateLocalZ(absRoll.toRadians())
         }
     }
-
     fun enableCollision(model: ModelTransformation) {
         collisionVector = model
         val scaleX = model.scale.x
@@ -99,24 +97,23 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
                 absYaw = data.yaw
                 absPitch = data.pitch
                 absRoll = data.roll
-
                 origin.set(data.origin.copy())
                 scale.set(data.scale.copy())
-                //rightRotation.set(data.relativeRotation.copy())
             } else {
-                absYaw = it.absYaw + data.yaw
-                absPitch = it.absPitch + data.pitch
-                absRoll = it.absRoll + data.roll
+                absYaw = (it.absYaw + data.yaw) % AnimationUtilities.FULL_ROTATION_DEG
+                absPitch = (it.absPitch + data.pitch) % AnimationUtilities.FULL_ROTATION_DEG
+                absRoll = (it.absRoll + data.roll) % AnimationUtilities.FULL_ROTATION_DEG
                 origin.set(it.origin.copy().add(data.origin))
-                //rightRotation.set(it.rightRotation.copy().mul(data.relativeRotation))
                 scale.set(it.scale.copy().mul(data.scale))
             }
             inverted = data.inverted
-            leftRotation.set(Quaternionf(0F, 0F, 0F, 1F))
-            applyAbsoluteRotations()
         }
-        update() // We call update here to update the right rotation as well.
-        rotatingOrigin.set(calculateRotationOffset(origin.x, origin.y, origin.z, yaw, pitch, roll))
+        relYaw = yaw
+        relPitch = pitch
+        relRoll = roll
+        rotatingOrigin.set(calculateRotationOffset(origin.x, origin.y, origin.z, relYaw, relPitch, relRoll))
+        applyAbsoluteRotations()
+        applyRelativeRotations()
         castEntity?.let {
             it.interpolationDelay = 0
             it.interpolationDuration = 0
@@ -127,7 +124,21 @@ abstract class DisplayModel<T : Display>(entityType: Class<T>, val data: ModelTr
         }
     }
 
-    override fun update() {
+    final override fun applyAbsoluteRotations() {
+        leftRotation.set(Quaternionf(0F, 0F, 0F, 1F))
+        if(absPitch != 0F) {
+            leftRotation.rotateLocalX(absPitch.toRadians())
+        }
+        if(absYaw != 0F) {
+            leftRotation.rotateLocalY(absYaw.toRadians())
+        }
+        if(absRoll != 0F) {
+            leftRotation.rotateLocalZ(absRoll.toRadians())
+        }
+        metadata[4] = Triple(12, Version.V1_19_4.quaternionSerializer, leftRotation)
+    }
+
+    override fun applyRelativeRotations() {
         rightRotation.set(0F, 0F, 0F, 1F)
         if (relPitch != 0F) {
             rightRotation.rotateLocalX(if (inverted) -relPitch else relPitch)

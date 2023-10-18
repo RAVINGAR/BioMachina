@@ -10,7 +10,8 @@ import kotlin.math.sqrt
  * This contains quick caches for common animation tropes
  */
 object AnimationUtilities {
-    const val FULL_ROTATION = (Math.PI * 2).toFloat()
+    const val FULL_ROTATION_RADS = (Math.PI * 2).toFloat()
+    const val FULL_ROTATION_DEG = 360F
     private val squareRootCache: MutableMap<Float, Float> = Hashtable()
 
     fun quickSqrt(squared: Float) : Float {

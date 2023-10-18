@@ -32,14 +32,13 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
         override val leftRotation: Quaternionf get() = (this.root as ItemDisplayModel).leftRotation
         override val rightRotation: Quaternionf get() =(this.root as ItemDisplayModel).rightRotation
         override val scale: Vector3f get() = (this.root as ItemDisplayModel).scale
+        override val rotatingOrigin: Vector3f
+            get() = (this.root as ItemDisplayModel).rotatingOrigin
         override var inverted: Boolean
             get() = (this.root as ItemDisplayModel).inverted
             set(value) {
                 (this.root as ItemDisplayModel).inverted = value
             }
-
-        override val rotatingOrigin: Vector3f
-            get() = (this.root as ItemDisplayModel).rotatingOrigin
 
         override var absYaw: Float
             get() = (this.root as ItemDisplayModel).absYaw
@@ -81,10 +80,18 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
             }
         }
 
-        override fun update() {
+        override fun applyRelativeRotations() {
             consumeEach {
                 if(it is VectorModel) {
-                    it.update()
+                    it.applyRelativeRotations()
+                }
+            }
+        }
+
+        override fun applyAbsoluteRotations() {
+            consumeEach {
+                if(it is VectorModel) {
+                    it.applyAbsoluteRotations()
                 }
             }
         }
@@ -169,18 +176,18 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
     override fun update(controller: AnimationController<*>) {
         controller.sendPackets(buildList {
             (innerChassis.root as ItemDisplayModel).let {
-                it.update()
+                it.applyRelativeRotations()
                 this.add(it.getAnimationPacket(controller))
             }
             frontWheelSet.forEach { model ->
                 (model as ItemDisplayModel).let {
-                    it.update()
+                    it.applyRelativeRotations()
                     this.add(it.getAnimationPacket(controller))
                 }
             }
             rearWheelSet.forEach { model ->
                 (model as ItemDisplayModel).let {
-                    it.update()
+                    it.applyRelativeRotations()
                     this.add(it.getAnimationPacket(controller))
                 }
             }
@@ -214,7 +221,7 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                         it.rotateYaw(yawDiff)
                         it.rotatePitch(pitchDiff)
                         it.rotateRoll(rollDiff)
-                        it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll)) // need add relative
+                        it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll))
                     }
 
                     val steeringAngle = calculateSteeringAngle(yawDiff)
@@ -222,9 +229,9 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                     frontWheelSet.forEach { model ->
                         (model as VectorModel).let {
                             it.rotateYaw(steeringDiff)
-                            //it.rotatePitch(pitchDiff)
+                            it.rotatePitch(pitchDiff)
                             it.rotateRoll(rollDiff)
-                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, 0F, newRoll)) // need add relative
+                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll))
                         }
                     }
 
@@ -233,9 +240,9 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                     rearWheelSet.forEach { model ->
                         (model as VectorModel).let {
                             it.rotateYaw(yawDiff)
-                            //it.rotatePitch(pitchDiff)
+                            it.rotatePitch(pitchDiff)
                             it.rotateRoll(rollDiff)
-                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, 0F, newRoll)) // need add relative
+                            it.rotatingOrigin.set(calculateRotationOffset(it.origin.x, it.origin.y, it.origin.z, newYaw, newPitch, newRoll))
                         }
                     }
                     lastYaw = newYaw
@@ -253,9 +260,9 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                     if(abs < 0.005F) return 0F
                     if(abs > Math.PI) {
                         if(diff < 0F) {
-                            diff += AnimationUtilities.FULL_ROTATION
+                            diff += AnimationUtilities.FULL_ROTATION_RADS
                         } else {
-                            diff -= AnimationUtilities.FULL_ROTATION
+                            diff -= AnimationUtilities.FULL_ROTATION_RADS
                         }
                     }
                     return diff
@@ -289,7 +296,7 @@ class MotorVehicleModel(type: VehicleType) : VehicleModel(type) {
                     val speedInKmH = speed.get()
                     if(speedInKmH == 0F) return
                     val newSpeed = min(speedInKmH, 100F) * factor
-                    val rotationRads : Float = (wheelRotations * newSpeed / wheelCircumference).toFloat()
+                    val rotationRads : Float = (wheelRotations * newSpeed / wheelCircumference)
                     frontWheelSet.forEach { model ->
                         (model as VectorModel).rotatePitch(rotationRads)
                     }

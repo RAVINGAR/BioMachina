@@ -29,17 +29,17 @@ interface Vehicle {
     val input: AtomicInput
 
     /**
-     * The current yaw of the base entity vehicle
+     * The current yaw of the base entity vehicle in radians
      */
     val yaw: AtomicReference<Float>
 
     /**
-     * The current pitch of the base entity vehicle
+     * The current pitch of the base entity vehicle in radians
      */
     val pitch: AtomicReference<Float>
 
     /**
-     * The current roll of the base entity vehicle
+     * The current roll of the base entity vehicle in radians
      */
     val roll: AtomicReference<Float>
 

@@ -67,16 +67,6 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
      */
     val actualSpeedSquared: AtomicDouble = AtomicDouble(0.0)
 
-    override val animationController: AnimationController<*> by lazy {
-        val controller = AnimationController(model)
-        with(model) {
-            controller.animate(this.buildIdleRotationAnimation(yaw, pitch, roll))
-            controller.animate(this.buildWheelRotationAnimation(speed))
-            // todo more animations!
-        }
-        return@lazy controller
-    }
-
     /**
      * Atomic yaw in radians
      */
@@ -105,6 +95,16 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
     val acceleration: Float get() = statHolder.getStat(Acceleration).value()
 
     val brakingPower: Float get() = statHolder.getStat(BrakingPower).value()
+
+    override val animationController: AnimationController<*> by lazy {
+        val controller = AnimationController(model)
+        with(model) {
+            controller.animate(this.buildIdleRotationAnimation(yaw, pitch, roll))
+            controller.animate(this.buildWheelRotationAnimation(speed))
+            // todo more animations!
+        }
+        return@lazy controller
+    }
 
     companion object {
         private val minimalRange = (-0.05F..0.05F)
@@ -284,9 +284,21 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
             }
             */
         }
-        val averageDiff = ((frontInfo.height + rearInfo.height) / 2F) * (speed.get() * speedConverterFactor)
-        //warn("Front Diff = $frontDiff | Rear Diff = $rearDiff")
-        if(frontInfo.height > rearInfo.height) {
+        val fHeight = frontInfo.height
+        val rHeight = rearInfo.height
+        val averageDiff = (((fHeight + rHeight) / 2F) / traversalFactor)
+        //warn("Front Diff = $fHeight | Rear Diff = $rHeight")
+
+        if(fHeight == rHeight) {
+            // If these things are the same then we can sorta assume like either floating or in the ground
+            if(fHeight > 0F) {
+                //warn("1. Debug -> Moving Up")
+                velocity.setY(abs(averageDiff))
+            } else {
+                //warn("1. Debug -> Moving Down")
+                velocity.setY(abs(averageDiff) * -1F)
+            }
+        } else if(fHeight > rHeight) {
             // If greater than, means that moving up
             //warn("1. Debug -> Moving Up")
             if(frontInfo.height > terrainHeight) {
@@ -294,11 +306,11 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
                 stop(location, entity) // This doesn't actually stop the boat!
             } else {
                 //warn("  2. Debug -> Scaling terrain!")
-                velocity.setY(averageDiff)
+                velocity.setY(abs(averageDiff))
             }
         } else {
             //warn("1. Debug -> Moving Down")
-            velocity.setY(averageDiff)
+            velocity.setY(abs(averageDiff) * -1F)
         }
     }
 
@@ -365,9 +377,10 @@ class MotorVehicle(override val uuid: UUID, override val type: MotorVehicleType)
 
     private fun rayTraceHeight(location: Location, modelLocation: Vector, chassisHeight: Float) : Float {
         val bottom = location.clone().add(modelLocation)
-        world.spawnParticle(Particle.VILLAGER_HAPPY, bottom, 5) // <-- Todo remove this
+        //world.spawnParticle(Particle.VILLAGER_HAPPY, bottom, 5) // <-- Todo remove this
         val bottomY = bottom.y
         bottom.y = bottomY + chassisHeight + terrainHeight
+        //world.spawnParticle(Particle.VILLAGER_HAPPY, bottom, 5) // <-- Todo remove this
         val result =
             world.rayTraceBlocks(bottom, Vector(0, -1, 0), (terrainHeight * 2F + type.height + chassisHeight).toDouble(), FluidCollisionMode.NEVER, true)
                 ?: return -0.4F * traversalFactor

@@ -11,21 +11,21 @@ interface VectorModel : Model {
     val rightRotation: Quaternionf
     val scale: Vector3f
 
-    val rotatingOrigin: Vector3f // Todo remove this as its unnecessary
+    val rotatingOrigin: Vector3f
 
     var inverted: Boolean
 
     /**
-     * Pitch rotates on the x-axis
+     * Pitch rotates on the x-axis in degrees
      */
     var absPitch: Float
     /**
-     * Yaw rotates on the y-axis
+     * Yaw rotates on the y-axis in degrees
      */
     var absYaw: Float
 
     /**
-     * Roll rotates on the z-axis
+     * Roll rotates on the z-axis in degrees
      */
     var absRoll: Float
 
@@ -35,19 +35,19 @@ interface VectorModel : Model {
     fun apply(yaw: Float, pitch: Float, roll: Float)
 
     /**
-     * Pitch rotates on the x-axis. This is always relative for the specific model
+     * Pitch rotates on the x-axis in radians. This is always relative for the specific model
      * and should never consider the parent rotation.
      */
     var relPitch: Float
 
     /**
-     * Yaw rotates on the y-axis. This is always relative for the specific model
+     * Yaw rotates on the y-axis in radians. This is always relative for the specific model
      * and should never consider the parent rotation.
      */
     var relYaw: Float
 
     /**
-     * Roll rotates on the z-axis. This is always relative for the specific model
+     * Roll rotates on the z-axis in radians. This is always relative for the specific model
      * and should never consider the parent rotation.
      */
     var relRoll: Float
@@ -57,7 +57,7 @@ interface VectorModel : Model {
      */
     fun rotatePitch(rads: Float) {
         if(rads == 0F) return
-        relPitch = (relPitch + rads) % AnimationUtilities.FULL_ROTATION
+        relPitch = (relPitch + rads) % AnimationUtilities.FULL_ROTATION_RADS
     }
 
     /**
@@ -65,7 +65,7 @@ interface VectorModel : Model {
      */
     fun rotateYaw(rads: Float) {
         if(rads == 0F) return
-        relYaw = (relYaw + rads) % AnimationUtilities.FULL_ROTATION
+        relYaw = (relYaw + rads) % AnimationUtilities.FULL_ROTATION_RADS
     }
 
     /**
@@ -73,12 +73,10 @@ interface VectorModel : Model {
      */
     fun rotateRoll(rads: Float) {
         if(rads == 0F) return
-        relRoll = (relRoll + rads) % AnimationUtilities.FULL_ROTATION
+        relRoll = (relRoll + rads) % AnimationUtilities.FULL_ROTATION_RADS
     }
 
-    fun addOffset(offset: Vector3f) {
-        //todo
-    }
+    fun applyRelativeRotations()
 
-    fun update()
+    fun applyAbsoluteRotations()
 }
